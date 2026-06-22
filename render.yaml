@@ -1,0 +1,32 @@
+services:
+  # Backend Node Service
+  - type: web
+    name: novavest-backend
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # You will be prompted to enter this in the Render Dashboard
+      - key: JWT_SECRET
+        generateValue: true
+
+  # Frontend Static Site
+  - type: web
+    name: novavest-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: novavest-backend
+          envVarKey: RENDER_EXTERNAL_URL
