@@ -5,12 +5,17 @@ function Dashboard() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  
   const [activeTab, setActiveTab] = useState('overview');
+  const [dashboardData, setDashboardData] = useState({ user: null, investments: [], transactions: [] });
+  const [isLoading, setIsLoading] = useState(true);
   
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('btc');
   
   const packages = {
     'Cardano': { returns: '10%', min: 200, max: 500 },
@@ -31,6 +36,7 @@ function Dashboard() {
     }
     
     setUser(JSON.parse(savedUser));
+    fetchDashboardData(token);
     
     // Check if we came from "Invest Now" button on Home page
     if (location.state && location.state.selectedPackage) {
@@ -39,6 +45,22 @@ function Dashboard() {
       window.history.replaceState({}, document.title)
     }
   }, [navigate, location]);
+
+  const fetchDashboardData = async (token) => {
+    try {
+      const response = await fetch(`${API_URL}/api/user/dashboard`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -52,14 +74,40 @@ function Dashboard() {
     setIsCheckoutOpen(true);
   };
 
-  const handleCheckoutSubmit = (e) => {
+  const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
-    alert(`Investment of $${amount} in ${selectedPackage.name} submitted successfully! (Mock)`);
-    setIsCheckoutOpen(false);
-    setActiveTab('investments');
+    const token = localStorage.getItem('token');
+    
+    try {
+      const response = await fetch(`${API_URL}/api/invest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          package: selectedPackage.name,
+          amount: amount,
+          expectedReturn: selectedPackage.returns,
+          paymentMethod: paymentMethod
+        })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message || 'Investment submitted securely.');
+        setIsCheckoutOpen(false);
+        fetchDashboardData(token);
+        setActiveTab('transactions');
+      } else {
+        alert(data.message || 'Error submitting investment');
+      }
+    } catch (error) {
+      alert('Network error during checkout');
+    }
   };
 
-  if (!user) return null;
+  if (!user || isLoading) return <div style={{ color: 'white', padding: '50px', textAlign: 'center' }}>Loading dashboard...</div>;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
@@ -137,15 +185,15 @@ function Dashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px' }}>
                 <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Total Balance</p>
-                  <h3 style={{ fontSize: '2rem', color: 'white' }}>$0.00</h3>
+                  <h3 style={{ fontSize: '2rem', color: 'white' }}>${dashboardData.user?.balance?.toLocaleString() || '0.00'}</h3>
                 </div>
                 <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Active Investments</p>
-                  <h3 style={{ fontSize: '2rem', color: 'var(--accent-blue)' }}>0</h3>
+                  <h3 style={{ fontSize: '2rem', color: 'var(--accent-blue)' }}>{dashboardData.investments?.filter(i => i.status === 'active').length || 0}</h3>
                 </div>
                 <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Total Profit</p>
-                  <h3 style={{ fontSize: '2rem', color: '#10b981' }}>$0.00</h3>
+                  <h3 style={{ fontSize: '2rem', color: '#10b981' }}>${dashboardData.user?.profit?.toLocaleString() || '0.00'}</h3>
                 </div>
               </div>
               
@@ -182,11 +230,29 @@ function Dashboard() {
           {activeTab === 'investments' && (
             <div>
               <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>My Investments</h2>
-              <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📊</div>
-                <p>You don't have any active investments yet.</p>
-                <button onClick={() => setActiveTab('invest')} className="btn btn-outline" style={{ marginTop: '20px' }}>Browse Packages</button>
-              </div>
+              {dashboardData.investments?.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                  {dashboardData.investments.map(inv => (
+                    <div key={inv._id} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                        <h3 style={{ fontSize: '1.2rem' }}>{inv.package}</h3>
+                        <span style={{ color: inv.status === 'active' ? '#10b981' : '#f59e0b', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', textTransform: 'capitalize' }}>{inv.status}</span>
+                      </div>
+                      <p style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '10px' }}>
+                        ${inv.amount.toLocaleString()}
+                      </p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Expected Return: {inv.expectedReturn}</p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '10px' }}>Date: {new Date(inv.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📊</div>
+                  <p>You don't have any active investments yet.</p>
+                  <button onClick={() => setActiveTab('invest')} className="btn btn-outline" style={{ marginTop: '20px' }}>Browse Packages</button>
+                </div>
+              )}
             </div>
           )}
 
@@ -204,9 +270,26 @@ function Dashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>No transactions found.</td>
-                    </tr>
+                    {dashboardData.transactions?.length > 0 ? (
+                      dashboardData.transactions.map(tx => (
+                        <tr key={tx._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <td style={{ padding: '15px' }}>{new Date(tx.createdAt).toLocaleDateString()}</td>
+                          <td style={{ padding: '15px', textTransform: 'capitalize' }}>{tx.type} {tx.method ? `(${tx.method.toUpperCase()})` : ''}</td>
+                          <td style={{ padding: '15px' }}>${tx.amount.toLocaleString()}</td>
+                          <td style={{ padding: '15px' }}>
+                            <span style={{ 
+                              color: tx.status === 'completed' ? '#10b981' : tx.status === 'pending' ? '#f59e0b' : '#ef4444' 
+                            }}>
+                              {tx.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>No transactions found.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -269,7 +352,10 @@ function Dashboard() {
               
               <div style={{ marginBottom: '30px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Select Payment Method</label>
-                <select style={{
+                <select 
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  style={{
                     width: '100%', padding: '15px', borderRadius: '8px',
                     background: 'var(--bg-main)', border: '1px solid var(--border-color)',
                     color: 'white', outline: 'none', fontSize: '1rem', appearance: 'none'

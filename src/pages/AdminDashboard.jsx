@@ -4,8 +4,28 @@ import { useNavigate, Link } from 'react-router-dom';
 function AdminDashboard() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('users');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   
+  const [activeTab, setActiveTab] = useState('users');
+  const [adminData, setAdminData] = useState({ users: [], investments: [], transactions: [] });
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const fetchAdminData = async (token) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/dashboard`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAdminData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching admin data', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -15,10 +35,31 @@ function AdminDashboard() {
       return;
     }
     
-    // In a real app, you would check if user.role === 'admin'
-    // For this demo, we'll just let anyone who logs in see it for demonstration
-    setUser(JSON.parse(savedUser));
+    const parsedUser = JSON.parse(savedUser);
+    setUser(parsedUser);
+    
+    // Fetch real data
+    fetchAdminData(token);
   }, [navigate]);
+
+  const handleApproveTransaction = async (txId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`${API_URL}/api/admin/transaction/${txId}/approve`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        alert('Transaction approved successfully');
+        fetchAdminData(token);
+      } else {
+        alert('Failed to approve transaction');
+      }
+    } catch (error) {
+      alert('Network error');
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -101,19 +142,25 @@ function AdminDashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '30px' }}>
             <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Total Users</p>
-              <h3 style={{ fontSize: '1.5rem', color: 'white' }}>124</h3>
+              <h3 style={{ fontSize: '1.5rem', color: 'white' }}>{adminData.users.length}</h3>
             </div>
             <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Total Invested</p>
-              <h3 style={{ fontSize: '1.5rem', color: '#818cf8' }}>$45,200</h3>
+              <h3 style={{ fontSize: '1.5rem', color: '#818cf8' }}>
+                ${adminData.investments.reduce((sum, inv) => sum + inv.amount, 0).toLocaleString()}
+              </h3>
             </div>
             <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Pending Deposits</p>
-              <h3 style={{ fontSize: '1.5rem', color: '#f59e0b' }}>3</h3>
+              <h3 style={{ fontSize: '1.5rem', color: '#f59e0b' }}>
+                {adminData.transactions.filter(tx => tx.type === 'deposit' && tx.status === 'pending').length}
+              </h3>
             </div>
             <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Pending Withdrawals</p>
-              <h3 style={{ fontSize: '1.5rem', color: '#ef4444' }}>1</h3>
+              <h3 style={{ fontSize: '1.5rem', color: '#ef4444' }}>
+                {adminData.transactions.filter(tx => tx.type === 'withdrawal' && tx.status === 'pending').length}
+              </h3>
             </div>
           </div>
 
@@ -132,33 +179,43 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {/* Mock Data based on active tab */}
-                {activeTab === 'users' && (
-                  <tr>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>{user.email}</td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>Joined recently</td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}><span style={{ color: '#10b981' }}>Active</span></td>
+                {activeTab === 'users' && adminData.users.map(u => (
+                  <tr key={u._id}>
+                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>{u.email}</td>
+                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                      Joined {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>
+                      <span style={{ color: u.role === 'admin' ? '#818cf8' : '#10b981' }}>{u.role.toUpperCase()}</span>
+                    </td>
                     <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>
                       <button style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid #ef4444', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Ban</button>
                     </td>
                   </tr>
-                )}
+                ))}
                 
-                {activeTab === 'deposits' && (
-                  <tr>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>investor@example.com</td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', color: 'white' }}>$1,000 via BTC</td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}><span style={{ color: '#f59e0b' }}>Pending</span></td>
+                {activeTab === 'deposits' && adminData.transactions.filter(tx => tx.type === 'deposit').map(tx => (
+                  <tr key={tx._id}>
+                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>{tx.userId?.email || 'Unknown User'}</td>
+                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', color: 'white' }}>
+                      ${tx.amount.toLocaleString()} via {tx.method?.toUpperCase()}
+                    </td>
+                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>
+                      <span style={{ color: tx.status === 'completed' ? '#10b981' : tx.status === 'pending' ? '#f59e0b' : '#ef4444' }}>
+                        {tx.status}
+                      </span>
+                    </td>
                     <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '10px' }}>
-                      <button style={{ background: '#10b981', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Approve</button>
-                      <button style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Reject</button>
+                      {tx.status === 'pending' && (
+                        <button onClick={() => handleApproveTransaction(tx._id)} style={{ background: '#10b981', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Approve</button>
+                      )}
                     </td>
                   </tr>
-                )}
+                ))}
 
                 {(activeTab === 'investments' || activeTab === 'withdrawals') && (
                   <tr>
-                    <td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>No records to display.</td>
+                    <td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>No records to display yet.</td>
                   </tr>
                 )}
               </tbody>
