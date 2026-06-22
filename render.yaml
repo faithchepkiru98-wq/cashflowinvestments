@@ -3,6 +3,7 @@ services:
   - type: web
     name: novavest-backend
     env: node
+    plan: free
     rootDir: server
     buildCommand: npm install
     startCommand: node server.js
