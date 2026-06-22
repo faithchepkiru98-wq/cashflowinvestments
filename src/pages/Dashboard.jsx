@@ -112,11 +112,11 @@ function Dashboard() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
       {/* Dashboard Nav */}
-      <header className="navbar" style={{ background: 'rgba(11, 17, 32, 1)', borderBottom: '1px solid var(--border-color)', padding: '15px 0' }}>
+      <header className="navbar" style={{ background: 'rgba(19, 23, 34, 1)', borderBottom: '1px solid var(--border-color)', padding: '15px 0' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Link to="/" className="logo">
             <div className="logo-icon"></div>
-            <span>Novavest Dashboard</span>
+            <span>Cashflowvest Dashboard</span>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
              <span style={{ color: 'var(--text-secondary)' }}>Welcome, <span style={{ color: 'white' }}>{user.email.split('@')[0]}</span></span>

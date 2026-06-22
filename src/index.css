@@ -1,19 +1,19 @@
 :root {
-    --bg-main: #0b1120;
-    --bg-card: #111827;
-    --bg-card-hover: #1f2937;
+    --bg-main: #131722;
+    --bg-card: #1e222d;
+    --bg-card-hover: #2a2e39;
     --text-primary: #f3f4f6;
     --text-secondary: #9ca3af;
-    --accent-blue: #3b82f6;
-    --accent-purple: #8b5cf6;
-    --accent-pink: #ec4899;
-    --border-color: rgba(255, 255, 255, 0.1);
-    --border-glow: rgba(59, 130, 246, 0.5);
-    --warning-bg: rgba(220, 38, 38, 0.1);
-    --warning-border: #dc2626;
+    --accent-blue: #00e676; /* Bullish Green */
+    --accent-purple: #f5a623; /* Crypto Gold */
+    --accent-pink: #f5a623;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(0, 230, 118, 0.5);
+    --warning-bg: rgba(239, 68, 68, 0.1);
+    --warning-border: #ef4444;
     
-    --gradient-primary: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    --gradient-text: linear-gradient(to right, var(--accent-blue), var(--accent-pink));
+    --gradient-primary: linear-gradient(135deg, var(--accent-blue), #00b0ff); /* Green to Blue */
+    --gradient-text: linear-gradient(to right, var(--accent-blue), var(--accent-purple)); /* Green to Gold */
 }
 
 * {
@@ -73,12 +73,13 @@ ul {
 
 .btn-primary {
     background: var(--gradient-primary);
-    color: white;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    color: #131722; /* Dark text on bright button for better contrast */
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
 }
 
 .btn-primary:hover {
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 6px 20px rgba(0, 230, 118, 0.5);
     transform: translateY(-2px);
 }
 
@@ -90,7 +91,7 @@ ul {
 
 .btn-outline:hover {
     border-color: var(--accent-blue);
-    background: rgba(59, 130, 246, 0.05);
+    background: rgba(0, 230, 118, 0.05);
 }
 
 .btn-lg {
@@ -109,7 +110,7 @@ ul {
     left: 0;
     width: 100%;
     z-index: 1000;
-    background: rgba(11, 17, 32, 0.8);
+    background: rgba(19, 23, 34, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-color);
     padding: 15px 0;
@@ -205,7 +206,7 @@ ul {
     transform: translateX(-50%);
     width: 800px;
     height: 800px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(11, 17, 32, 0) 70%);
+    background: radial-gradient(circle, rgba(0, 230, 118, 0.15) 0%, rgba(19, 23, 34, 0) 70%);
     z-index: -1;
 }
 
@@ -241,7 +242,7 @@ ul {
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
     padding: 40px;
-    background: rgba(17, 24, 39, 0.6);
+    background: rgba(30, 34, 45, 0.6);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     backdrop-filter: blur(10px);
@@ -291,7 +292,7 @@ ul {
 
 .package-card.popular {
     border-color: var(--accent-blue);
-    background: linear-gradient(180deg, rgba(17, 24, 39, 1) 0%, rgba(59, 130, 246, 0.05) 100%);
+    background: linear-gradient(180deg, rgba(30, 34, 45, 1) 0%, rgba(0, 230, 118, 0.05) 100%);
 }
 
 .popular-badge {
@@ -317,7 +318,7 @@ ul {
 }
 
 .return-badge {
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(0, 230, 118, 0.1);
     color: var(--accent-blue);
     padding: 4px 10px;
     border-radius: 6px;
@@ -423,6 +424,7 @@ ul {
     align-items: center;
     justify-content: center;
     font-weight: bold;
+    color: #131722;
     font-size: 1.2rem;
 }
 

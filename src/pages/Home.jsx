@@ -114,13 +114,13 @@ function Home() {
   return (
     <>
       <header className="navbar" style={{
-        background: isScrolled ? 'rgba(11, 17, 32, 0.95)' : 'rgba(11, 17, 32, 0.8)',
+        background: isScrolled ? 'rgba(19, 23, 34, 0.95)' : 'rgba(19, 23, 34, 0.8)',
         boxShadow: isScrolled ? '0 4px 20px rgba(0, 0, 0, 0.5)' : 'none'
       }}>
         <div className="container nav-content">
           <div className="logo">
             <div className="logo-icon"></div>
-            <span>Novavest</span>
+            <span>Cashflowvest</span>
           </div>
           <nav className="nav-links" style={{
             display: isMobileMenuOpen ? 'flex' : '',
@@ -129,7 +129,7 @@ function Home() {
             top: isMobileMenuOpen ? '100%' : '',
             left: isMobileMenuOpen ? '0' : '',
             width: isMobileMenuOpen ? '100%' : '',
-            background: isMobileMenuOpen ? 'rgba(11, 17, 32, 0.98)' : '',
+            background: isMobileMenuOpen ? 'rgba(19, 23, 34, 0.98)' : '',
             padding: isMobileMenuOpen ? '20px' : '',
             borderBottom: isMobileMenuOpen ? '1px solid var(--border-color)' : '',
             gap: isMobileMenuOpen ? '20px' : ''
@@ -403,7 +403,7 @@ function Home() {
         <section id="features" className="features section">
           <div className="container">
             <div className="section-header">
-              <h2 className="section-title">Why Choose <span className="text-gradient">Novavest?</span></h2>
+              <h2 className="section-title">Why Choose <span className="text-gradient">Cashflowvest?</span></h2>
               <p className="section-desc">We provide the best tools and environment for your investments to thrive.</p>
             </div>
             <div className="features-grid">
@@ -458,7 +458,7 @@ function Home() {
                 </div>
               </div>
               <div className="testimonial-card">
-                <p className="quote">"I was skeptical at first, but Novavest proved their worth within the first week. Instant payouts are a game changer."</p>
+                <p className="quote">"I was skeptical at first, but Cashflowvest proved their worth within the first week. Instant payouts are a game changer."</p>
                 <div className="author">
                   <div className="avatar">MJ</div>
                   <div>
@@ -507,7 +507,7 @@ function Home() {
           <div className="footer-col">
             <div className="logo">
               <div className="logo-icon"></div>
-              <span>Novavest</span>
+              <span>Cashflowvest</span>
             </div>
             <p>Smart Investment Solutions for Modern Investors.</p>
           </div>
@@ -525,12 +525,12 @@ function Home() {
           </div>
           <div className="footer-col">
             <h4>Contact Us</h4>
-            <p>Email: support@novavest.co.ke</p>
+            <p>Email: support@Cashflowvest.co.ke</p>
             <p>Location: New York, USA</p>
           </div>
         </div>
         <div className="container footer-bottom">
-          <p>&copy; 2026 Novavest. All rights reserved.</p>
+          <p>&copy; 2026 Cashflowvest. All rights reserved.</p>
         </div>
       </footer>
     </>

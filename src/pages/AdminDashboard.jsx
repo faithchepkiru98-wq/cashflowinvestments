@@ -72,14 +72,14 @@ function AdminDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
       {/* Admin Nav */}
-      <header className="navbar" style={{ background: '#1e1b4b', borderBottom: '1px solid rgba(99, 102, 241, 0.2)', padding: '15px 0' }}>
+      <header className="navbar" style={{ background: 'rgba(19, 23, 34, 1)', borderBottom: '1px solid rgba(0, 230, 118, 0.2)', padding: '15px 0' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Link to="/" className="logo">
-            <div className="logo-icon" style={{ background: 'linear-gradient(135deg, #6366f1, #ec4899)' }}></div>
-            <span>Novavest Admin</span>
+            <div className="logo-icon" style={{ background: 'linear-gradient(135deg, #00e676, #f5a623)' }}></div>
+            <span>Cashflowvest Admin</span>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-             <span style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#ec4899', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>ADMIN</span>
+             <span style={{ background: 'rgba(245, 166, 35, 0.2)', color: '#f5a623', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>ADMIN</span>
              <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>Logout</button>
           </div>
         </div>
@@ -93,10 +93,10 @@ function AdminDashboard() {
           <button 
             onClick={() => setActiveTab('users')}
             style={{ 
-              background: activeTab === 'users' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'users' ? '#818cf8' : 'var(--text-primary)',
+              background: activeTab === 'users' ? 'rgba(0, 230, 118, 0.1)' : 'transparent',
+              color: activeTab === 'users' ? '#00e676' : 'var(--text-primary)',
               border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'users' ? '3px solid #818cf8' : '3px solid transparent',
+              borderLeft: activeTab === 'users' ? '3px solid #00e676' : '3px solid transparent',
               transition: 'all 0.2s'
             }}>
             Manage Users
@@ -104,10 +104,10 @@ function AdminDashboard() {
           <button 
             onClick={() => setActiveTab('investments')}
             style={{ 
-              background: activeTab === 'investments' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'investments' ? '#818cf8' : 'var(--text-primary)',
+              background: activeTab === 'investments' ? 'rgba(0, 230, 118, 0.1)' : 'transparent',
+              color: activeTab === 'investments' ? '#00e676' : 'var(--text-primary)',
               border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'investments' ? '3px solid #818cf8' : '3px solid transparent',
+              borderLeft: activeTab === 'investments' ? '3px solid #00e676' : '3px solid transparent',
               transition: 'all 0.2s'
             }}>
             Active Investments
@@ -115,10 +115,10 @@ function AdminDashboard() {
           <button 
             onClick={() => setActiveTab('deposits')}
             style={{ 
-              background: activeTab === 'deposits' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'deposits' ? '#818cf8' : 'var(--text-primary)',
+              background: activeTab === 'deposits' ? 'rgba(0, 230, 118, 0.1)' : 'transparent',
+              color: activeTab === 'deposits' ? '#00e676' : 'var(--text-primary)',
               border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'deposits' ? '3px solid #818cf8' : '3px solid transparent',
+              borderLeft: activeTab === 'deposits' ? '3px solid #00e676' : '3px solid transparent',
               transition: 'all 0.2s'
             }}>
             Pending Deposits
@@ -126,10 +126,10 @@ function AdminDashboard() {
           <button 
             onClick={() => setActiveTab('withdrawals')}
             style={{ 
-              background: activeTab === 'withdrawals' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'withdrawals' ? '#818cf8' : 'var(--text-primary)',
+              background: activeTab === 'withdrawals' ? 'rgba(0, 230, 118, 0.1)' : 'transparent',
+              color: activeTab === 'withdrawals' ? '#00e676' : 'var(--text-primary)',
               border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'withdrawals' ? '3px solid #818cf8' : '3px solid transparent',
+              borderLeft: activeTab === 'withdrawals' ? '3px solid #00e676' : '3px solid transparent',
               transition: 'all 0.2s'
             }}>
             Withdrawal Requests
@@ -146,7 +146,7 @@ function AdminDashboard() {
             </div>
             <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Total Invested</p>
-              <h3 style={{ fontSize: '1.5rem', color: '#818cf8' }}>
+              <h3 style={{ fontSize: '1.5rem', color: '#00e676' }}>
                 ${adminData.investments.reduce((sum, inv) => sum + inv.amount, 0).toLocaleString()}
               </h3>
             </div>
