@@ -300,6 +300,31 @@ function Dashboard() {
                   </button>
                 </div>
               </div>
+
+              {/* Admin Activation Link */}
+              <div style={{ background: 'rgba(129, 140, 248, 0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(129, 140, 248, 0.2)', marginBottom: '40px' }}>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: '#818cf8' }}>👑 Admin Activation</h3>
+                <p style={{ margin: '0 0 15px 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Open this link in your browser to upgrade your account to Admin, then logout and log back in.</p>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={`https://novavest-backend.onrender.com/api/auth/make-me-admin/${user?.email}`}
+                    style={{ flex: 1, background: 'rgba(129,140,248,0.1)', color: '#818cf8', padding: '10px 15px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid rgba(129,140,248,0.3)', outline: 'none', fontFamily: 'monospace' }}
+                  />
+                  <button onClick={() => {
+                    const link = `https://novavest-backend.onrender.com/api/auth/make-me-admin/${user?.email}`;
+                    navigator.clipboard.writeText(link);
+                    addToast('Admin link copied! Open it in your browser.', 'success');
+                  }} style={{ background: '#818cf8', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                    Copy Link
+                  </button>
+                  <a href={`https://novavest-backend.onrender.com/api/auth/make-me-admin/${user?.email}`} target="_blank" rel="noreferrer"
+                    style={{ background: 'transparent', color: '#818cf8', border: '1px solid #818cf8', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap', textDecoration: 'none' }}>
+                    Open ↗
+                  </a>
+                </div>
+              </div>
               
               <div style={{ background: 'var(--bg-main)', padding: '30px', borderRadius: '12px', textAlign: 'center', border: '1px dashed var(--border-color)' }}>
                 <h3 style={{ marginBottom: '15px' }}>Ready to grow your portfolio?</h3>
