@@ -1,5 +1,102 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+
+// ── Live Investment Gains Card ───────────────────────────────────────────────
+function InvestmentCard({ inv, packages }) {
+  const pkgData = packages[inv.package] || {};
+  const pct = parseFloat(pkgData.returns) || 0; // e.g. 10 for "10%"
+
+  // Total gain the investor should earn over the full duration (30 days)
+  const totalGain = (inv.amount * pct) / 100;
+  const durationMs = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+
+  // How much has elapsed since the investment was created
+  const startTime = new Date(inv.createdAt).getTime();
+  const calcEarned = () => {
+    if (inv.status !== 'active') return totalGain;
+    const elapsed = Math.min(Date.now() - startTime, durationMs);
+    return (totalGain * elapsed) / durationMs;
+  };
+
+  const [earned, setEarned] = useState(calcEarned);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (inv.status !== 'active') return;
+    intervalRef.current = setInterval(() => {
+      setEarned(calcEarned());
+    }, 1000);
+    return () => clearInterval(intervalRef.current);
+  }, [inv._id]);
+
+  const progress = Math.min((earned / totalGain) * 100, 100);
+  const elapsed = Date.now() - startTime;
+  const daysLeft = Math.max(0, Math.ceil((durationMs - elapsed) / (1000 * 60 * 60 * 24)));
+
+  return (
+    <div style={{ background: 'var(--bg-main)', border: `1px solid ${inv.status === 'active' ? 'rgba(0,230,118,0.2)' : 'var(--border-color)'}`, borderRadius: '16px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+      {/* Glow effect for active */}
+      {inv.status === 'active' && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, #00e676, transparent)' }} />
+      )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+        <div>
+          <h3 style={{ fontSize: '1.3rem', marginBottom: '4px' }}>{inv.package}</h3>
+          <span style={{ color: '#f5a623', fontSize: '0.85rem', fontWeight: 'bold' }}>{pkgData.returns} monthly return</span>
+        </div>
+        <span style={{
+          color: inv.status === 'active' ? '#10b981' : '#f59e0b',
+          background: inv.status === 'active' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+          border: `1px solid ${inv.status === 'active' ? '#10b981' : '#f59e0b'}`,
+          padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '600', textTransform: 'capitalize'
+        }}>{inv.status}</span>
+      </div>
+
+      {/* Principal */}
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Principal Invested</p>
+      <p style={{ color: 'white', fontSize: '1.6rem', fontWeight: 'bold', marginBottom: '20px' }}>
+        ${inv.amount.toLocaleString()}
+      </p>
+
+      {/* Live Gains */}
+      <div style={{ background: 'rgba(0,230,118,0.05)', border: '1px solid rgba(0,230,118,0.15)', borderRadius: '12px', padding: '16px', marginBottom: '18px' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '6px' }}>
+          {inv.status === 'active' ? '⚡ Live Earnings' : '✅ Total Earned'}
+        </p>
+        <p style={{ color: '#00e676', fontSize: '2rem', fontWeight: '800', fontFamily: 'monospace', letterSpacing: '-1px' }}>
+          +${earned.toFixed(4)}
+        </p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '4px' }}>
+          of ${totalGain.toLocaleString(undefined, { maximumFractionDigits: 2 })} total return
+        </p>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ marginBottom: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>Progress</span>
+          <span style={{ color: '#00e676', fontSize: '0.78rem', fontWeight: 'bold' }}>{progress.toFixed(2)}%</span>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '10px', height: '8px', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', borderRadius: '10px', width: `${progress}%`,
+            background: 'linear-gradient(90deg, #00e676, #00b0ff)',
+            transition: 'width 1s linear',
+            boxShadow: '0 0 10px rgba(0,230,118,0.5)'
+          }} />
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+        <span>📅 Started: {new Date(inv.createdAt).toLocaleDateString()}</span>
+        {inv.status === 'active' && <span>⏳ {daysLeft}d left</span>}
+      </div>
+    </div>
+  );
+}
 
 function Dashboard() {
   const [user, setUser] = useState(null);
@@ -411,21 +508,12 @@ function Dashboard() {
 
           {activeTab === 'investments' && (
             <div>
-              <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>My Investments</h2>
+              <h2 style={{ marginBottom: '8px', fontSize: '1.8rem' }}>My Investments</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '25px', fontSize: '0.9rem' }}>Live gains update in real-time based on your package rate.</p>
               {dashboardData.investments?.length > 0 ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
                   {dashboardData.investments.map(inv => (
-                    <div key={inv._id} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                        <h3 style={{ fontSize: '1.2rem' }}>{inv.package}</h3>
-                        <span style={{ color: inv.status === 'active' ? '#10b981' : '#f59e0b', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', textTransform: 'capitalize' }}>{inv.status}</span>
-                      </div>
-                      <p style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '10px' }}>
-                        ${inv.amount.toLocaleString()}
-                      </p>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Expected Return: {inv.expectedReturn}</p>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '10px' }}>Date: {new Date(inv.createdAt).toLocaleDateString()}</p>
-                    </div>
+                    <InvestmentCard key={inv._id} inv={inv} packages={packages} />
                   ))}
                 </div>
               ) : (
