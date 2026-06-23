@@ -91,6 +91,8 @@ const transactionSchema = new mongoose.Schema({
     amount:        { type: Number, required: true },
     method:        { type: String },
     walletAddress: { type: String },
+    txId:          { type: String },
+    contactInfo:   { type: String },
     status:        { type: String, default: 'pending' },
     investmentId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Investment' },
     createdAt:     { type: Date, default: Date.now }
@@ -304,7 +306,7 @@ app.get('/api/user/dashboard', verifyToken, async (req, res) => {
 // ─── FEATURE 5: Investment with Timer ────────────────────────────────────────
 app.post('/api/invest', verifyToken, async (req, res) => {
     try {
-        const { package: pkgName, amount, expectedReturn, paymentMethod } = req.body;
+        const { package: pkgName, amount, expectedReturn, paymentMethod, txId, contactInfo } = req.body;
 
         const returnPct  = parseFloat(expectedReturn) / 100;
         const returnAmt  = parseFloat(amount) * (1 + returnPct);
@@ -316,6 +318,8 @@ app.post('/api/invest', verifyToken, async (req, res) => {
             type:   'deposit',
             amount: Number(amount),
             method: paymentMethod,
+            txId,
+            contactInfo,
             status: 'pending'
         });
         await transaction.save();

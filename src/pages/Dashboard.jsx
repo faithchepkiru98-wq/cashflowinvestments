@@ -15,7 +15,11 @@ function Dashboard() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('btc');
+  const [paymentMethod, setPaymentMethod] = useState('usdt');
+  const [walletAddresses, setWalletAddresses] = useState(null);
+  const [txId, setTxId] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
+  const [copied, setCopied] = useState(false);
   
   const packages = {
     'Cardano': { returns: '10%', min: 200, max: 500 },
@@ -55,6 +59,13 @@ function Dashboard() {
         const data = await response.json();
         setDashboardData(data);
       }
+      
+      const walletRes = await fetch(`${API_URL}/api/wallet-addresses`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (walletRes.ok) {
+        setWalletAddresses(await walletRes.json());
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data', error);
     } finally {
@@ -71,6 +82,9 @@ function Dashboard() {
   const handleInvest = (pkgName) => {
     setSelectedPackage({ name: pkgName, ...packages[pkgName] });
     setAmount(packages[pkgName].min);
+    setTxId('');
+    setContactInfo('');
+    setPaymentMethod('usdt');
     setIsCheckoutOpen(true);
   };
 
@@ -89,7 +103,9 @@ function Dashboard() {
           package: selectedPackage.name,
           amount: amount,
           expectedReturn: selectedPackage.returns,
-          paymentMethod: paymentMethod
+          paymentMethod: paymentMethod,
+          txId: txId,
+          contactInfo: contactInfo
         })
       });
       
@@ -302,73 +318,162 @@ function Dashboard() {
       {isCheckoutOpen && selectedPackage && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-          zIndex: 2000, backdropFilter: 'blur(5px)'
+          background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 2000, backdropFilter: 'blur(5px)', overflowY: 'auto', padding: '20px'
         }}>
           <div style={{
-            background: 'var(--bg-card)', padding: '40px', borderRadius: '16px',
-            width: '100%', maxWidth: '450px', border: '1px solid var(--border-color)', position: 'relative'
+            background: '#11100b', padding: '40px', borderRadius: '24px',
+            width: '100%', maxWidth: '500px', border: '1px solid #332d16', position: 'relative',
+            fontFamily: 'Inter, sans-serif'
           }}>
             <button 
               onClick={() => setIsCheckoutOpen(false)}
-              style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer' }}
+              style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer' }}
             >&times;</button>
             
-            <h2 style={{ marginBottom: '10px' }}>Checkout</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>Complete your investment securely.</p>
-            
-            <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '8px', marginBottom: '25px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Package:</span>
-                <strong style={{ color: 'white' }}>{selectedPackage.name}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Expected Return:</span>
-                <strong style={{ color: '#10b981' }}>{selectedPackage.returns}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Limits:</span>
-                <strong style={{ color: 'white' }}>${selectedPackage.min.toLocaleString()} - ${selectedPackage.max.toLocaleString()}</strong>
+            {/* Header section like image */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <div style={{ border: '1px solid #f5a623', color: '#f5a623', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                  B
+                </div>
+                <div>
+                  <h2 style={{ color: 'white', margin: 0, fontSize: '1.4rem' }}>Pay with Crypto</h2>
+                  <p style={{ color: '#f5a623', margin: 0, fontSize: '0.9rem', fontWeight: '600' }}>
+                    {selectedPackage.name.toUpperCase()} — {selectedPackage.returns} Return
+                  </p>
+                </div>
               </div>
             </div>
 
             <form onSubmit={handleCheckoutSubmit}>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Investment Amount (USD)</label>
-                <input 
-                  type="number" 
-                  min={selectedPackage.min} 
-                  max={selectedPackage.max}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                  style={{
-                    width: '100%', padding: '15px', borderRadius: '8px',
-                    background: 'var(--bg-main)', border: '1px solid var(--accent-blue)',
-                    color: 'white', outline: 'none', fontSize: '1.1rem'
-                  }}
-                />
-              </div>
               
-              <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Select Payment Method</label>
-                <select 
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  style={{
-                    width: '100%', padding: '15px', borderRadius: '8px',
-                    background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                    color: 'white', outline: 'none', fontSize: '1rem', appearance: 'none'
-                  }}>
-                  <option value="btc">Bitcoin (BTC)</option>
-                  <option value="eth">Ethereum (ETH)</option>
-                  <option value="usdt">Tether (USDT TRC20)</option>
-                  <option value="bank">Bank Transfer</option>
-                </select>
+              <div style={{ marginBottom: '25px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Enter Investment Amount
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', background: '#1a1811', border: '1px solid #332d16', borderRadius: '12px', padding: '0 15px' }}>
+                  <span style={{ color: '#f5a623', fontSize: '1.2rem', fontWeight: 'bold' }}>$</span>
+                  <input 
+                    type="number" 
+                    min={selectedPackage.min} 
+                    max={selectedPackage.max}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                    style={{
+                      width: '100%', padding: '15px 10px', background: 'transparent', border: 'none',
+                      color: 'white', outline: 'none', fontSize: '1.2rem', fontWeight: 'bold'
+                    }}
+                  />
+                </div>
+                <p style={{ color: '#666', fontSize: '0.8rem', marginTop: '8px' }}>
+                  Min: ${selectedPackage.min.toLocaleString()} - Max: ${selectedPackage.max.toLocaleString()}
+                </p>
               </div>
 
-              <button type="submit" className="btn btn-primary btn-block" style={{ fontSize: '1.1rem', padding: '15px' }}>
-                Confirm & Proceed to Payment
+              <div style={{ marginBottom: '25px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Select Crypto Network
+                </label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {['usdt', 'btc', 'eth'].map(coin => (
+                    <button
+                      key={coin}
+                      type="button"
+                      onClick={() => setPaymentMethod(coin)}
+                      style={{
+                        flex: 1, padding: '12px 0', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
+                        background: paymentMethod === coin ? 'rgba(245, 166, 35, 0.1)' : 'transparent',
+                        border: paymentMethod === coin ? '1px solid #f5a623' : '1px solid #332d16',
+                        color: paymentMethod === coin ? '#f5a623' : '#888'
+                      }}
+                    >
+                      {coin === 'usdt' ? 'USDT (TRC20)' : coin.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {walletAddresses && (
+                <div style={{ marginBottom: '30px' }}>
+                  <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                    Send To This Address
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: '#1a1811', border: '1px solid #332d16', borderRadius: '12px', padding: '15px' }}>
+                    <div style={{ color: '#f5a623', marginRight: '15px' }}>💳</div>
+                    <div style={{ flex: 1, color: '#f5a623', wordBreak: 'break-all', fontSize: '0.95rem', fontFamily: 'monospace' }}>
+                      {walletAddresses[paymentMethod]}
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => { navigator.clipboard.writeText(walletAddresses[paymentMethod]); setCopied(true); setTimeout(()=>setCopied(false), 2000); }}
+                      style={{ background: 'transparent', border: '1px solid #332d16', color: '#f5a623', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', marginLeft: '10px' }}
+                    >
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                  
+                  {paymentMethod === 'usdt' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px', color: '#888', fontSize: '0.85rem' }}>
+                      <span style={{ color: '#f5a623' }}>⚠️</span> Only send USDT on the <strong style={{ color: '#f5a623' }}>TRC20 (TRON)</strong> network to this address
+                    </div>
+                  )}
+
+                  <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '12px', padding: '15px', marginTop: '15px', display: 'flex', gap: '10px' }}>
+                    <span style={{ color: '#ef4444' }}>⚠️</span>
+                    <p style={{ color: '#888', margin: 0, fontSize: '0.85rem' }}>
+                      Sending on the wrong network will result in <strong style={{ color: '#ef4444' }}>permanent loss of funds</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Submit Your Payment Proof
+                </label>
+                
+                <div style={{ marginBottom: '15px' }}>
+                  <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '5px' }}>Transaction Hash (TX ID)</p>
+                  <input 
+                    type="text" 
+                    value={txId}
+                    onChange={(e) => setTxId(e.target.value)}
+                    placeholder="e.g. 0xabc123..."
+                    required
+                    style={{
+                      width: '100%', padding: '15px', borderRadius: '10px',
+                      background: '#1a1811', border: '1px solid #332d16',
+                      color: 'white', outline: 'none'
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '5px' }}>Telegram Username or Email</p>
+                  <input 
+                    type="text" 
+                    value={contactInfo}
+                    onChange={(e) => setContactInfo(e.target.value)}
+                    placeholder="Where should we contact you?"
+                    required
+                    style={{
+                      width: '100%', padding: '15px', borderRadius: '10px',
+                      background: '#1a1811', border: '1px solid #332d16',
+                      color: 'white', outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" style={{ 
+                width: '100%', background: '#f5a623', color: '#11100b', 
+                fontWeight: 'bold', fontSize: '1.1rem', padding: '16px', 
+                border: 'none', borderRadius: '12px', cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(245, 166, 35, 0.2)', transition: 'all 0.2s'
+              }}>
+                Submit Payment Proof ✅
               </button>
             </form>
           </div>
