@@ -20,6 +20,13 @@ function Dashboard() {
   const [txId, setTxId] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [copied, setCopied] = useState(false);
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
   
   const packages = {
     'Cardano': { returns: '10%', min: 200, max: 500 },
@@ -111,15 +118,15 @@ function Dashboard() {
       
       const data = await response.json();
       if (response.ok) {
-        alert(data.message || 'Investment submitted securely.');
+        addToast(data.message || 'Investment submitted! Awaiting confirmation.', 'success');
         setIsCheckoutOpen(false);
         fetchDashboardData(token);
         setActiveTab('transactions');
       } else {
-        alert(data.message || 'Error submitting investment');
+        addToast(data.message || 'Error submitting investment', 'error');
       }
     } catch (error) {
-      alert('Network error during checkout');
+      addToast('Network error during checkout', 'error');
     }
   };
 
@@ -127,6 +134,20 @@ function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
+      <style>{`@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
+      {/* Toast Notifications */}
+      <div style={{ position: 'fixed', bottom: '30px', right: '30px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {toasts.map(t => (
+          <div key={t.id} style={{
+            background: t.type === 'success' ? '#064e3b' : '#7f1d1d',
+            border: `1px solid ${t.type === 'success' ? '#10b981' : '#ef4444'}`,
+            color: 'white', padding: '14px 20px', borderRadius: '10px', minWidth: '280px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)', fontSize: '0.9rem', animation: 'slideIn 0.3s ease'
+          }}>
+            {t.type === 'success' ? '✅' : '❌'} {t.message}
+          </div>
+        ))}
+      </div>
       {/* Dashboard Nav */}
       <header className="navbar" style={{ background: 'rgba(19, 23, 34, 1)', borderBottom: '1px solid var(--border-color)', padding: '15px 0' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

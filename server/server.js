@@ -209,7 +209,7 @@ app.post('/api/auth/login', async (req, res) => {
 
         res.status(200).json({
             token,
-            user: { id: user._id, email: user.email, role: user.role, referralCode: user.referralCode },
+            user: { id: user._id, name: user.name, phone: user.phone, email: user.email, role: user.role, referralCode: user.referralCode },
             message: 'Login successful'
         });
     } catch (error) {
@@ -428,6 +428,17 @@ app.put('/api/admin/transaction/:id/reject', verifyAdmin, async (req, res) => {
         }
 
         res.json({ message: 'Transaction rejected', transaction });
+    } catch {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Admin: update user balance manually
+app.put('/api/admin/user/:id/balance', verifyAdmin, async (req, res) => {
+    try {
+        const { balance } = req.body;
+        await User.findByIdAndUpdate(req.params.id, { balance: Number(balance) });
+        res.json({ message: 'Balance updated successfully' });
     } catch {
         res.status(500).json({ message: 'Server error' });
     }

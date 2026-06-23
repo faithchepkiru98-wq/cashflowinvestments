@@ -1,228 +1,403 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
+// ── Toast Notification ──────────────────────────────────────────────────────
+function Toast({ toasts, removeToast }) {
+  return (
+    <div style={{ position: 'fixed', bottom: '30px', right: '30px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {toasts.map(t => (
+        <div key={t.id} style={{
+          background: t.type === 'success' ? '#064e3b' : t.type === 'error' ? '#7f1d1d' : '#1e3a5f',
+          border: `1px solid ${t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#3b82f6'}`,
+          color: 'white', padding: '14px 20px', borderRadius: '10px', minWidth: '280px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px',
+          animation: 'slideIn 0.3s ease'
+        }}>
+          <span style={{ fontSize: '0.9rem' }}>
+            {t.type === 'success' ? '✅' : t.type === 'error' ? '❌' : 'ℹ️'} {t.message}
+          </span>
+          <button onClick={() => removeToast(t.id)} style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', fontSize: '1.1rem' }}>×</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Stat Card ───────────────────────────────────────────────────────────────
+function StatCard({ label, value, color, icon }) {
+  return (
+    <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+      <div style={{ fontSize: '2rem' }}>{icon}</div>
+      <div>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
+        <h3 style={{ fontSize: '1.8rem', color: color || 'white', margin: 0 }}>{value}</h3>
+      </div>
+    </div>
+  );
+}
+
+// ── Badge ───────────────────────────────────────────────────────────────────
+function Badge({ status }) {
+  const colors = {
+    pending:   { bg: 'rgba(245,158,11,0.15)', text: '#f59e0b' },
+    completed: { bg: 'rgba(16,185,129,0.15)',  text: '#10b981' },
+    active:    { bg: 'rgba(16,185,129,0.15)',  text: '#10b981' },
+    rejected:  { bg: 'rgba(239,68,68,0.15)',   text: '#ef4444' },
+    admin:     { bg: 'rgba(129,140,248,0.15)', text: '#818cf8' },
+    user:      { bg: 'rgba(16,185,129,0.15)',  text: '#10b981' },
+  };
+  const c = colors[status] || colors.user;
+  return (
+    <span style={{ background: c.bg, color: c.text, padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '600', textTransform: 'uppercase' }}>
+      {status}
+    </span>
+  );
+}
+
+// ── Main Component ──────────────────────────────────────────────────────────
 function AdminDashboard() {
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  
-  const [activeTab, setActiveTab] = useState('users');
+  const [user, setUser]           = useState(null);
+  const [activeTab, setActiveTab] = useState('deposits');
   const [adminData, setAdminData] = useState({ users: [], investments: [], transactions: [] });
   const [isLoading, setIsLoading] = useState(true);
-  
-  const fetchAdminData = async (token) => {
+  const [toasts, setToasts]       = useState([]);
+  const [editUser, setEditUser]   = useState(null);
+  const [editBalance, setEditBalance] = useState('');
+  const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  // Toast helpers
+  const addToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
+  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  const fetchAdminData = useCallback(async (token) => {
     try {
-      const response = await fetch(`${API_URL}/api/admin/dashboard`, {
+      const res = await fetch(`${API_URL}/api/admin/dashboard`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setAdminData(data);
-      }
-    } catch (error) {
-      console.error('Error fetching admin data', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      if (res.ok) setAdminData(await res.json());
+      else if (res.status === 403) { addToast('Admin access required', 'error'); navigate('/'); }
+    } catch { addToast('Failed to load admin data', 'error'); }
+    finally { setIsLoading(false); }
+  }, [API_URL, navigate]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token     = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
-    if (!token || !savedUser) {
-      navigate('/');
-      return;
-    }
-    
-    const parsedUser = JSON.parse(savedUser);
-    setUser(parsedUser);
-    
-    // Fetch real data
+    if (!token || !savedUser) { navigate('/'); return; }
+    const parsed = JSON.parse(savedUser);
+    if (parsed.role !== 'admin') { navigate('/dashboard'); return; }
+    setUser(parsed);
     fetchAdminData(token);
-  }, [navigate]);
+  }, [navigate, fetchAdminData]);
 
-  const handleApproveTransaction = async (txId) => {
+  const handleTransaction = async (txId, action) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`${API_URL}/api/admin/transaction/${txId}/approve`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${API_URL}/api/admin/transaction/${txId}/${action}`, {
+        method: 'PUT', headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      if (response.ok) {
-        alert('Transaction approved successfully');
+      const data = await res.json();
+      if (res.ok) {
+        addToast(data.message || `Transaction ${action}d`, 'success');
         fetchAdminData(token);
-      } else {
-        alert('Failed to approve transaction');
-      }
-    } catch (error) {
-      alert('Network error');
-    }
+      } else addToast(data.message || 'Action failed', 'error');
+    } catch { addToast('Network error', 'error'); }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/');
+  const handleUpdateBalance = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/user/${editUser._id}/balance`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ balance: Number(editBalance) })
+      });
+      const data = await res.json();
+      if (res.ok) { addToast('Balance updated!', 'success'); setEditUser(null); fetchAdminData(token); }
+      else addToast(data.message || 'Failed to update', 'error');
+    } catch { addToast('Network error', 'error'); }
   };
 
-  if (!user) return null;
+  const handleLogout = () => { localStorage.clear(); navigate('/'); };
+
+  if (isLoading) return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white', fontSize: '1.2rem' }}>
+      Loading admin panel...
+    </div>
+  );
+
+  const deposits     = adminData.transactions.filter(tx => tx.type === 'deposit');
+  const withdrawals  = adminData.transactions.filter(tx => tx.type === 'withdrawal');
+  const pendingDeps  = deposits.filter(tx => tx.status === 'pending').length;
+  const pendingWithd = withdrawals.filter(tx => tx.status === 'pending').length;
+
+  const navItems = [
+    { key: 'deposits',    label: '💰 Deposits',    badge: pendingDeps },
+    { key: 'withdrawals', label: '📤 Withdrawals', badge: pendingWithd },
+    { key: 'investments', label: '📈 Investments' },
+    { key: 'users',       label: '👥 Users' },
+  ];
+
+  const thStyle = { padding: '14px 16px', color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)' };
+  const tdStyle = { padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.9rem', verticalAlign: 'middle' };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
-      {/* Admin Nav */}
-      <header className="navbar" style={{ background: 'rgba(19, 23, 34, 1)', borderBottom: '1px solid rgba(0, 230, 118, 0.2)', padding: '15px 0' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
+      <style>{`@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
+      <Toast toasts={toasts} removeToast={removeToast} />
+
+      {/* Header */}
+      <header style={{ background: 'rgba(19,23,34,0.98)', borderBottom: '1px solid rgba(0,230,118,0.2)', padding: '14px 0', position: 'sticky', top: 0, zIndex: 100 }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Link to="/" className="logo">
-            <div className="logo-icon" style={{ background: 'linear-gradient(135deg, #00e676, #f5a623)' }}></div>
-            <span>Cashflowvest Admin</span>
+            <div className="logo-icon" style={{ background: 'linear-gradient(135deg,#00e676,#f5a623)' }}></div>
+            <span>Cashflowvest <span style={{ color: '#f5a623', fontSize: '0.8rem' }}>ADMIN</span></span>
           </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-             <span style={{ background: 'rgba(245, 166, 35, 0.2)', color: '#f5a623', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>ADMIN</span>
-             <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>Logout</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              Logged in as <strong style={{ color: 'white' }}>{user?.email}</strong>
+            </span>
+            <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>Logout</button>
           </div>
         </div>
       </header>
 
-      {/* Admin Content */}
-      <div className="container" style={{ display: 'flex', flex: 1, padding: '40px 20px', gap: '30px' }}>
-        
+      <div className="container" style={{ display: 'flex', flex: 1, padding: '30px 20px', gap: '25px' }}>
+
         {/* Sidebar */}
-        <aside style={{ width: '250px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button 
-            onClick={() => setActiveTab('users')}
-            style={{ 
-              background: activeTab === 'users' ? 'rgba(0, 230, 118, 0.1)' : 'transparent',
-              color: activeTab === 'users' ? '#00e676' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'users' ? '3px solid #00e676' : '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-            Manage Users
-          </button>
-          <button 
-            onClick={() => setActiveTab('investments')}
-            style={{ 
-              background: activeTab === 'investments' ? 'rgba(0, 230, 118, 0.1)' : 'transparent',
-              color: activeTab === 'investments' ? '#00e676' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'investments' ? '3px solid #00e676' : '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-            Active Investments
-          </button>
-          <button 
-            onClick={() => setActiveTab('deposits')}
-            style={{ 
-              background: activeTab === 'deposits' ? 'rgba(0, 230, 118, 0.1)' : 'transparent',
-              color: activeTab === 'deposits' ? '#00e676' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'deposits' ? '3px solid #00e676' : '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-            Pending Deposits
-          </button>
-          <button 
-            onClick={() => setActiveTab('withdrawals')}
-            style={{ 
-              background: activeTab === 'withdrawals' ? 'rgba(0, 230, 118, 0.1)' : 'transparent',
-              color: activeTab === 'withdrawals' ? '#00e676' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'withdrawals' ? '3px solid #00e676' : '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-            Withdrawal Requests
-          </button>
+        <aside style={{ width: '220px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            {navItems.map(item => (
+              <button key={item.key} onClick={() => setActiveTab(item.key)} style={{
+                background: activeTab === item.key ? 'rgba(0,230,118,0.1)' : 'transparent',
+                color: activeTab === item.key ? '#00e676' : 'var(--text-secondary)',
+                border: 'none', padding: '13px 15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
+                borderLeft: activeTab === item.key ? '3px solid #00e676' : '3px solid transparent',
+                transition: 'all 0.2s', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                fontWeight: activeTab === item.key ? '600' : '400'
+              }}>
+                <span>{item.label}</span>
+                {item.badge > 0 && (
+                  <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', width: '20px', height: '20px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </aside>
 
-        {/* Main Content Area */}
-        <main style={{ flex: 1, background: 'var(--bg-card)', borderRadius: '16px', padding: '30px', border: '1px solid var(--border-color)' }}>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '30px' }}>
-            <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Total Users</p>
-              <h3 style={{ fontSize: '1.5rem', color: 'white' }}>{adminData.users.length}</h3>
-            </div>
-            <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Total Invested</p>
-              <h3 style={{ fontSize: '1.5rem', color: '#00e676' }}>
-                ${adminData.investments.reduce((sum, inv) => sum + inv.amount, 0).toLocaleString()}
-              </h3>
-            </div>
-            <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Pending Deposits</p>
-              <h3 style={{ fontSize: '1.5rem', color: '#f59e0b' }}>
-                {adminData.transactions.filter(tx => tx.type === 'deposit' && tx.status === 'pending').length}
-              </h3>
-            </div>
-            <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px' }}>Pending Withdrawals</p>
-              <h3 style={{ fontSize: '1.5rem', color: '#ef4444' }}>
-                {adminData.transactions.filter(tx => tx.type === 'withdrawal' && tx.status === 'pending').length}
-              </h3>
-            </div>
+        {/* Main */}
+        <main style={{ flex: 1, minWidth: 0 }}>
+          {/* Stats Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '25px' }}>
+            <StatCard label="Total Users"        value={adminData.users.length}                        color="white"    icon="👥" />
+            <StatCard label="Total Invested"     value={`$${deposits.filter(d=>d.status==='completed').reduce((s,d)=>s+d.amount,0).toLocaleString()}`} color="#00e676" icon="💰" />
+            <StatCard label="Pending Deposits"   value={pendingDeps}                                   color="#f59e0b"  icon="⏳" />
+            <StatCard label="Pending Withdrawals" value={pendingWithd}                                 color="#ef4444"  icon="📤" />
           </div>
 
-          <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', textTransform: 'capitalize' }}>
-            {activeTab.replace('-', ' ')}
-          </h2>
+          {/* Content Card */}
+          <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 25px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: '1.2rem' }}>
+                {navItems.find(n => n.key === activeTab)?.label}
+              </h2>
+              <button onClick={() => fetchAdminData(localStorage.getItem('token'))} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                🔄 Refresh
+              </button>
+            </div>
 
-          <div style={{ background: 'var(--bg-main)', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <tr>
-                  <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>User/Email</th>
-                  <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Details</th>
-                  <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Status</th>
-                  <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeTab === 'users' && adminData.users.map(u => (
-                  <tr key={u._id}>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>{u.email}</td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                      Joined {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>
-                      <span style={{ color: u.role === 'admin' ? '#818cf8' : '#10b981' }}>{u.role.toUpperCase()}</span>
-                    </td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>
-                      <button style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid #ef4444', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Ban</button>
-                    </td>
-                  </tr>
-                ))}
-                
-                {activeTab === 'deposits' && adminData.transactions.filter(tx => tx.type === 'deposit').map(tx => (
-                  <tr key={tx._id}>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>{tx.userId?.email || 'Unknown User'}</td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', color: 'white' }}>
-                      ${tx.amount.toLocaleString()} via {tx.method?.toUpperCase()}
-                    </td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>
-                      <span style={{ color: tx.status === 'completed' ? '#10b981' : tx.status === 'pending' ? '#f59e0b' : '#ef4444' }}>
-                        {tx.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '15px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '10px' }}>
-                      {tx.status === 'pending' && (
-                        <button onClick={() => handleApproveTransaction(tx._id)} style={{ background: '#10b981', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Approve</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                {/* ── DEPOSITS ── */}
+                {activeTab === 'deposits' && (<>
+                  <thead><tr>
+                    <th style={thStyle}>User</th>
+                    <th style={thStyle}>Amount</th>
+                    <th style={thStyle}>Method</th>
+                    <th style={thStyle}>TX Hash</th>
+                    <th style={thStyle}>Contact</th>
+                    <th style={thStyle}>Date</th>
+                    <th style={thStyle}>Status</th>
+                    <th style={thStyle}>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {deposits.length === 0 ? (
+                      <tr><td colSpan="8" style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>No deposits yet.</td></tr>
+                    ) : deposits.map(tx => (
+                      <tr key={tx._id} style={{ transition: 'background 0.15s' }}>
+                        <td style={tdStyle}>
+                          <div style={{ fontWeight: '500', color: 'white' }}>{tx.userId?.email || '—'}</div>
+                        </td>
+                        <td style={{ ...tdStyle, color: '#00e676', fontWeight: '700', fontSize: '1rem' }}>${tx.amount?.toLocaleString()}</td>
+                        <td style={tdStyle}><span style={{ textTransform: 'uppercase', color: '#f5a623', fontWeight: '600' }}>{tx.method || '—'}</span></td>
+                        <td style={tdStyle}>
+                          {tx.txId ? (
+                            <span style={{ fontFamily: 'monospace', color: '#9ca3af', fontSize: '0.8rem' }} title={tx.txId}>
+                              {tx.txId.slice(0, 14)}...
+                            </span>
+                          ) : <span style={{ color: '#555' }}>—</span>}
+                        </td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{tx.contactInfo || '—'}</td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{new Date(tx.createdAt).toLocaleDateString()}</td>
+                        <td style={tdStyle}><Badge status={tx.status} /></td>
+                        <td style={tdStyle}>
+                          {tx.status === 'pending' && (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button onClick={() => handleTransaction(tx._id, 'approve')} style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid #10b981', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}>
+                                ✓ Approve
+                              </button>
+                              <button onClick={() => handleTransaction(tx._id, 'reject')} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid #ef4444', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}>
+                                ✗ Reject
+                              </button>
+                            </div>
+                          )}
+                          {tx.status !== 'pending' && <span style={{ color: '#555', fontSize: '0.85rem' }}>—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>)}
 
-                {(activeTab === 'investments' || activeTab === 'withdrawals') && (
-                  <tr>
-                    <td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>No records to display yet.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                {/* ── WITHDRAWALS ── */}
+                {activeTab === 'withdrawals' && (<>
+                  <thead><tr>
+                    <th style={thStyle}>User</th>
+                    <th style={thStyle}>Amount</th>
+                    <th style={thStyle}>Method</th>
+                    <th style={thStyle}>Wallet Address</th>
+                    <th style={thStyle}>Date</th>
+                    <th style={thStyle}>Status</th>
+                    <th style={thStyle}>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {withdrawals.length === 0 ? (
+                      <tr><td colSpan="7" style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>No withdrawal requests yet.</td></tr>
+                    ) : withdrawals.map(tx => (
+                      <tr key={tx._id}>
+                        <td style={tdStyle}><div style={{ fontWeight: '500', color: 'white' }}>{tx.userId?.email || '—'}</div></td>
+                        <td style={{ ...tdStyle, color: '#ef4444', fontWeight: '700', fontSize: '1rem' }}>${tx.amount?.toLocaleString()}</td>
+                        <td style={tdStyle}><span style={{ textTransform: 'uppercase', color: '#f5a623', fontWeight: '600' }}>{tx.method || '—'}</span></td>
+                        <td style={tdStyle}>
+                          <span style={{ fontFamily: 'monospace', color: '#9ca3af', fontSize: '0.8rem' }}>
+                            {tx.walletAddress ? `${tx.walletAddress.slice(0, 20)}...` : '—'}
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{new Date(tx.createdAt).toLocaleDateString()}</td>
+                        <td style={tdStyle}><Badge status={tx.status} /></td>
+                        <td style={tdStyle}>
+                          {tx.status === 'pending' && (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button onClick={() => handleTransaction(tx._id, 'approve')} style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid #10b981', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}>
+                                ✓ Approve
+                              </button>
+                              <button onClick={() => handleTransaction(tx._id, 'reject')} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid #ef4444', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}>
+                                ✗ Reject
+                              </button>
+                            </div>
+                          )}
+                          {tx.status !== 'pending' && <span style={{ color: '#555', fontSize: '0.85rem' }}>—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>)}
+
+                {/* ── INVESTMENTS ── */}
+                {activeTab === 'investments' && (<>
+                  <thead><tr>
+                    <th style={thStyle}>User</th>
+                    <th style={thStyle}>Package</th>
+                    <th style={thStyle}>Amount</th>
+                    <th style={thStyle}>Expected Return</th>
+                    <th style={thStyle}>Ends At</th>
+                    <th style={thStyle}>Status</th>
+                  </tr></thead>
+                  <tbody>
+                    {adminData.investments.length === 0 ? (
+                      <tr><td colSpan="6" style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>No investments yet.</td></tr>
+                    ) : adminData.investments.map(inv => (
+                      <tr key={inv._id}>
+                        <td style={tdStyle}><div style={{ fontWeight: '500', color: 'white' }}>{inv.userId?.email || '—'}</div></td>
+                        <td style={{ ...tdStyle, color: '#f5a623', fontWeight: '600' }}>{inv.package}</td>
+                        <td style={{ ...tdStyle, color: 'white', fontWeight: '700' }}>${inv.amount?.toLocaleString()}</td>
+                        <td style={{ ...tdStyle, color: '#00e676' }}>{inv.expectedReturn}</td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                          {inv.endsAt ? new Date(inv.endsAt).toLocaleString() : '—'}
+                        </td>
+                        <td style={tdStyle}><Badge status={inv.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>)}
+
+                {/* ── USERS ── */}
+                {activeTab === 'users' && (<>
+                  <thead><tr>
+                    <th style={thStyle}>Name</th>
+                    <th style={thStyle}>Email</th>
+                    <th style={thStyle}>Phone</th>
+                    <th style={thStyle}>Balance</th>
+                    <th style={thStyle}>Role</th>
+                    <th style={thStyle}>Joined</th>
+                    <th style={thStyle}>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {adminData.users.length === 0 ? (
+                      <tr><td colSpan="7" style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>No users yet.</td></tr>
+                    ) : adminData.users.map(u => (
+                      <tr key={u._id}>
+                        <td style={{ ...tdStyle, fontWeight: '500', color: 'white' }}>{u.name || '—'}</td>
+                        <td style={tdStyle}>{u.email}</td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{u.phone || '—'}</td>
+                        <td style={{ ...tdStyle, color: '#00e676', fontWeight: '600' }}>${(u.balance || 0).toLocaleString()}</td>
+                        <td style={tdStyle}><Badge status={u.role} /></td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                        <td style={tdStyle}>
+                          <button onClick={() => { setEditUser(u); setEditBalance(u.balance || 0); }} style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623', border: '1px solid #f5a623', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                            ✏️ Edit Balance
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </>)}
+              </table>
+            </div>
           </div>
         </main>
       </div>
+
+      {/* Edit Balance Modal */}
+      {editUser && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '35px', width: '100%', maxWidth: '420px' }}>
+            <h3 style={{ marginBottom: '5px' }}>Edit User Balance</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '25px', fontSize: '0.9rem' }}>{editUser.email}</p>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>New Balance (USD)</label>
+            <input
+              type="number"
+              value={editBalance}
+              onChange={e => setEditBalance(e.target.value)}
+              style={{ width: '100%', padding: '13px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'white', outline: 'none', fontSize: '1.1rem', marginBottom: '20px' }}
+            />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={handleUpdateBalance} style={{ flex: 1, background: '#00e676', color: '#131722', fontWeight: '700', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem' }}>
+                Save
+              </button>
+              <button onClick={() => setEditUser(null)} style={{ flex: 1, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
