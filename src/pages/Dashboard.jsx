@@ -183,7 +183,12 @@ function Dashboard() {
             <div className="logo-icon"></div>
             <span>Cashflowvest Dashboard</span>
           </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+             {user?.role === 'admin' && (
+               <Link to="/admin" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.9rem', background: '#f5a623', color: '#000', border: 'none' }}>
+                 👑 Admin Panel
+               </Link>
+             )}
              <span style={{ color: 'var(--text-secondary)' }}>Welcome, <span style={{ color: 'white' }}>{user.name || user.email.split('@')[0]}</span></span>
              <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>Logout</button>
           </div>
