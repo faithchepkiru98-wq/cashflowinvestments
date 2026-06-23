@@ -281,15 +281,22 @@ function Dashboard() {
               {/* Referral Section */}
               <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
                 <div>
-                  <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>Your Referral Code</h3>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Share this code and earn bonuses when friends sign up.</p>
+                  <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>Your Referral Link</h3>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Share this link and earn bonuses when friends sign up.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <code style={{ background: 'rgba(245, 166, 35, 0.1)', color: '#f5a623', padding: '10px 15px', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', border: '1px solid rgba(245, 166, 35, 0.3)' }}>
-                    {dashboardData.user?.referralCode || 'Loading...'}
-                  </code>
-                  <button onClick={() => { navigator.clipboard.writeText(dashboardData.user?.referralCode); addToast('Copied to clipboard!', 'success'); }} style={{ background: 'var(--accent-blue)', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer' }}>
-                    Copy
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%', maxWidth: '400px' }}>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={dashboardData.user?.referralCode ? `${window.location.origin}/?ref=${dashboardData.user.referralCode}` : 'Loading...'} 
+                    style={{ flex: 1, background: 'rgba(245, 166, 35, 0.1)', color: '#f5a623', padding: '10px 15px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 'bold', border: '1px solid rgba(245, 166, 35, 0.3)', outline: 'none' }} 
+                  />
+                  <button onClick={() => { 
+                    const link = `${window.location.origin}/?ref=${dashboardData.user?.referralCode}`;
+                    navigator.clipboard.writeText(link); 
+                    addToast('Referral link copied!', 'success'); 
+                  }} style={{ background: 'var(--accent-blue)', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    Copy Link
                   </button>
                 </div>
               </div>
