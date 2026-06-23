@@ -12,6 +12,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy is required when hosting on platforms like Render, Heroku, etc.
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 
@@ -44,6 +47,7 @@ const WALLET_ADDRESSES = {
 // ─── MODELS ──────────────────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
     name:                { type: String },
+    phone:               { type: String },
     email:               { type: String, required: true, unique: true },
     password:            { type: String, required: true },
     balance:             { type: Number, default: 0 },
@@ -115,7 +119,7 @@ const sendEmail = async (to, subject, html) => {
 // ─── FEATURE 1: Email Verification ──────────────────────────────────────────
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, phone } = req.body;
 
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: 'User already exists' });
@@ -127,6 +131,7 @@ app.post('/api/auth/register', async (req, res) => {
 
         const newUser = new User({
             name,
+            phone,
             email,
             password: hashedPassword,
             verificationToken,
@@ -155,7 +160,7 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(201).json({
             message: 'Registration successful! Proceed to deposit.',
             token,
-            user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, referralCode: newUser.referralCode }
+            user: { id: newUser._id, name: newUser.name, phone: newUser.phone, email: newUser.email, role: newUser.role, referralCode: newUser.referralCode }
         });
     } catch (error) {
         console.error('Registration error:', error);

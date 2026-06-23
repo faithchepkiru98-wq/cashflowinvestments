@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -7,7 +9,9 @@ function Home() {
   const [authModal, setAuthModal] = useState({ isOpen: false, type: 'login' });
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState(null);
@@ -54,8 +58,10 @@ function Home() {
     setAuthModal({ isOpen: true, type });
     setMessage('');
     setName('');
+    setPhone('');
     setEmail('');
     setPassword('');
+    setShowPassword(false);
   };
 
   const handleLogout = () => {
@@ -69,6 +75,20 @@ function Home() {
     setIsLoading(true);
     setMessage('');
 
+    if (authModal.type === 'register') {
+      const strongRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\\$%\\^&\\*])(?=.{8,})");
+      if (!strongRegex.test(password)) {
+        setMessage("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
+        setIsLoading(false);
+        return;
+      }
+      if (!phone) {
+        setMessage("Please provide a valid phone number.");
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const endpoint = authModal.type === 'login' 
@@ -78,7 +98,7 @@ function Home() {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authModal.type === 'login' ? { email, password } : { name, email, password })
+        body: JSON.stringify(authModal.type === 'login' ? { email, password } : { name, email, password, phone })
       });
       
       const data = await response.json();
@@ -262,20 +282,35 @@ function Home() {
               <>
                 <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   {authModal.type === 'register' && (
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Full Name</label>
-                      <input 
-                        type="text" 
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        style={{
-                          width: '100%', padding: '12px', borderRadius: '8px',
-                          background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                          color: 'white', outline: 'none'
-                        }}
-                      />
-                    </div>
+                    <>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Full Name</label>
+                        <input 
+                          type="text" 
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          required
+                          style={{
+                            width: '100%', padding: '12px', borderRadius: '8px',
+                            background: 'var(--bg-main)', border: '1px solid var(--border-color)',
+                            color: 'white', outline: 'none'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Phone Number</label>
+                        <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0 12px' }}>
+                          <PhoneInput
+                            placeholder="Enter phone number"
+                            value={phone}
+                            onChange={setPhone}
+                            defaultCountry="US"
+                            className="custom-phone"
+                            style={{ color: 'white', outline: 'none', height: '44px' }}
+                          />
+                        </div>
+                      </div>
+                    </>
                   )}
                   <div>
                     <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Email</label>
@@ -291,19 +326,30 @@ function Home() {
                       }}
                     />
                   </div>
-                  <div>
+                  <div style={{ position: 'relative' }}>
                     <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Password</label>
                     <input 
-                      type="password" 
+                      type={showPassword ? "text" : "password"} 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       style={{
                         width: '100%', padding: '12px', borderRadius: '8px',
                         background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                        color: 'white', outline: 'none'
+                        color: 'white', outline: 'none', paddingRight: '50px'
                       }}
                     />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute', right: '10px', top: '35px',
+                        background: 'transparent', border: 'none', color: 'var(--text-secondary)',
+                        cursor: 'pointer', fontSize: '0.875rem'
+                      }}
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
                   </div>
                   <button type="submit" disabled={isLoading} className="btn btn-primary btn-block" style={{ marginTop: '10px' }}>
                     {isLoading ? 'Processing...' : (authModal.type === 'login' ? 'Login' : 'Sign Up')}

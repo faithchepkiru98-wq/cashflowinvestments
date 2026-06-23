@@ -579,3 +579,18 @@ ul {
         grid-template-columns: 1fr;
     }
 }
+
+/* Custom Phone Input Styles */
+.custom-phone .PhoneInputInput {
+    background: transparent;
+    border: none;
+    color: white;
+    outline: none;
+    font-family: inherit;
+    font-size: 1rem;
+    padding-left: 10px;
+}
+
+.custom-phone .PhoneInputCountryIcon--border {
+    box-shadow: none;
+}
