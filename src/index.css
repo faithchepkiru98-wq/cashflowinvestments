@@ -1,14 +1,14 @@
 :root {
-    --bg-main: #131722;
-    --bg-card: #1e222d;
-    --bg-card-hover: #2a2e39;
+    --bg-main: #050505;
+    --bg-card: #111111;
+    --bg-card-hover: #1a1a1a;
     --text-primary: #f3f4f6;
     --text-secondary: #9ca3af;
     --accent-blue: #00e676; /* Bullish Green */
     --accent-purple: #f5a623; /* Crypto Gold */
     --accent-pink: #f5a623;
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-glow: rgba(0, 230, 118, 0.5);
+    --border-color: rgba(255, 255, 255, 0.05);
+    --border-glow: rgba(0, 230, 118, 0.3);
     --warning-bg: rgba(239, 68, 68, 0.1);
     --warning-border: #ef4444;
     
@@ -593,4 +593,21 @@ ul {
 
 .custom-phone .PhoneInputCountryIcon--border {
     box-shadow: none;
+}
+
+/* Animations */
+@keyframes scrollTicker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.animate-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }

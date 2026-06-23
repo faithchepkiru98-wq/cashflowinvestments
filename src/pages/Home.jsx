@@ -41,6 +41,19 @@ function Home() {
 
     window.addEventListener('scroll', handleScroll);
     
+    // Intersection Observer for animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.animate-on-scroll').forEach((el) => {
+      observer.observe(el);
+    });
+    
     // Check if logged in
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -52,7 +65,10 @@ function Home() {
       }
     }
     
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    };
   }, []);
 
   const handleSmoothScroll = (e, targetId) => {
@@ -402,7 +418,24 @@ function Home() {
       )}
 
       <main>
-        <section id="home" className="hero">
+        {/* Live Payouts Ticker */}
+        <div style={{ background: '#111111', borderBottom: '1px solid #332d16', padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex' }}>
+          <div style={{ display: 'inline-block', animation: 'scrollTicker 30s linear infinite' }}>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User alex*** just withdrew $4,250 via USDT</span>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User mark_99 just withdrew $1,100 via BTC</span>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User sarah.t just withdrew $8,500 via ETH</span>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User crypto_king just withdrew $12,400 via USDT</span>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User david_w just withdrew $2,300 via BTC</span>
+            {/* Duplicate for seamless looping */}
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User alex*** just withdrew $4,250 via USDT</span>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User mark_99 just withdrew $1,100 via BTC</span>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User sarah.t just withdrew $8,500 via ETH</span>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User crypto_king just withdrew $12,400 via USDT</span>
+            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User david_w just withdrew $2,300 via BTC</span>
+          </div>
+        </div>
+
+        <section id="home" className="hero animate-on-scroll">
           <div className="hero-bg-glow"></div>
           <div className="container hero-content">
             <h1 className="hero-title">Smart Investment Solutions for <span className="text-gradient">Modern Investors</span></h1>
@@ -433,7 +466,7 @@ function Home() {
           </div>
         </section>
 
-        <section id="packages" className="packages section">
+        <section id="packages" className="packages animate-on-scroll">
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">Investment <span className="text-gradient">Packages</span></h2>
@@ -535,7 +568,7 @@ function Home() {
           </div>
         </section>
 
-        <section id="features" className="features section">
+        <section id="features" className="features animate-on-scroll">
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">Why Choose <span className="text-gradient">Cashflowvest?</span></h2>
@@ -664,6 +697,20 @@ function Home() {
             <p>Location: New York, USA</p>
           </div>
         </div>
+        
+        {/* Trust Badges */}
+        <div style={{ borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', padding: '20px 0', marginTop: '30px', marginBottom: '30px', display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '1.5rem', color: '#10b981' }}>🔒</span> 256-bit SSL Secure
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '1.5rem', color: '#3b82f6' }}>🛡️</span> DDoS Protected
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '1.5rem', color: '#f5a623' }}>⚡</span> Secure Crypto Gateway
+          </div>
+        </div>
+
         <div className="container footer-bottom">
           <p>&copy; 2026 Cashflowvest. All rights reserved.</p>
         </div>
