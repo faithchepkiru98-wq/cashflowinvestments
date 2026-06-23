@@ -119,7 +119,7 @@ function Dashboard() {
             <span>Cashflowvest Dashboard</span>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-             <span style={{ color: 'var(--text-secondary)' }}>Welcome, <span style={{ color: 'white' }}>{user.email.split('@')[0]}</span></span>
+             <span style={{ color: 'var(--text-secondary)' }}>Welcome, <span style={{ color: 'white' }}>{user.name || user.email.split('@')[0]}</span></span>
              <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>Logout</button>
           </div>
         </div>

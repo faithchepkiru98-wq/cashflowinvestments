@@ -4,6 +4,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 
 dotenv.config();
 
@@ -12,71 +15,167 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Basic User Model
+// ─── FEATURE 3: Rate Limiting ───────────────────────────────────────────────
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,
+    message: { message: 'Too many attempts. Please try again in 15 minutes.' }
+});
+
+app.use('/api/auth', authLimiter);
+
+// ─── EMAIL TRANSPORTER (Feature 1 & 2) ─────────────────────────────────────
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+// ─── WALLET ADDRESSES (Feature 4) ───────────────────────────────────────────
+const WALLET_ADDRESSES = {
+    btc:  process.env.BTC_WALLET  || '1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf6o',
+    eth:  process.env.ETH_WALLET  || '0x742d35Cc6634C0532925a3b8D4C9B7A5e7F7a8D',
+    usdt: process.env.USDT_WALLET || 'TRx8QjNfP2v3KY5zN9LpD4hW6mR1bEqVAk',
+    bank: 'Contact support for bank transfer details'
+};
+
+// ─── MODELS ──────────────────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    balance: { type: Number, default: 0 },
-    profit: { type: Number, default: 0 },
-    role: { type: String, default: 'user' },
-    createdAt: { type: Date, default: Date.now }
+    name:                { type: String },
+    email:               { type: String, required: true, unique: true },
+    password:            { type: String, required: true },
+    balance:             { type: Number, default: 0 },
+    profit:              { type: Number, default: 0 },
+    role:                { type: String, default: 'user' },
+    isVerified:          { type: Boolean, default: true },
+    verificationToken:   { type: String },
+    resetPasswordToken:  { type: String },
+    resetPasswordExpiry: { type: Date },
+    referralCode:        { type: String, unique: true, sparse: true },
+    referredBy:          { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt:           { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
 
-// Investment Model
+// Investment packages durations (in hours)
+const PACKAGE_DURATIONS = {
+    'Cardano':  6,
+    'Solana':   9,
+    'Bronze':   12,
+    'Platinum': 12,
+    'Gold':     15,
+    'Swift':    24
+};
+
 const investmentSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    package: { type: String, required: true },
-    amount: { type: Number, required: true },
+    userId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    package:        { type: String, required: true },
+    amount:         { type: Number, required: true },
     expectedReturn: { type: String, required: true },
-    status: { type: String, default: 'active' }, // active, completed
-    createdAt: { type: Date, default: Date.now }
+    returnAmount:   { type: Number },
+    status:         { type: String, default: 'pending' }, // pending, active, completed
+    endsAt:         { type: Date },
+    createdAt:      { type: Date, default: Date.now }
 });
 const Investment = mongoose.model('Investment', investmentSchema);
 
-// Transaction Model
 const transactionSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, required: true }, // deposit, withdrawal, investment
-    amount: { type: Number, required: true },
-    method: { type: String }, // btc, eth, usdt, bank
-    status: { type: String, default: 'pending' }, // pending, completed, rejected
-    createdAt: { type: Date, default: Date.now }
+    userId:        { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    type:          { type: String, required: true }, // deposit, withdrawal
+    amount:        { type: Number, required: true },
+    method:        { type: String },
+    walletAddress: { type: String },
+    status:        { type: String, default: 'pending' },
+    investmentId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Investment' },
+    createdAt:     { type: Date, default: Date.now }
 });
 const Transaction = mongoose.model('Transaction', transactionSchema);
 
-// Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/novavest';
+// ─── DB CONNECTION ────────────────────────────────────────────────────────────
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cashflowvest';
 mongoose.connect(MONGODB_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// Auth Routes
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
+
+const sendEmail = async (to, subject, html) => {
+    try {
+        await transporter.sendMail({ from: `"Cashflowvest" <${process.env.EMAIL_USER}>`, to, subject, html });
+        return true;
+    } catch (err) {
+        console.error('Email error:', err.message);
+        return false;
+    }
+};
+
+// ─── FEATURE 1: Email Verification ──────────────────────────────────────────
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        
-        // Check if user exists
+        const { name, email, password } = req.body;
+
         const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
-        
-        // Hash password
+        if (existingUser) return res.status(400).json({ message: 'User already exists' });
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-        
-        // Create new user
+
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
         const newUser = new User({
+            name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            verificationToken,
+            isVerified: true,
+            referralCode: generateReferralCode()
         });
-        
+
         await newUser.save();
-        
-        res.status(201).json({ message: 'User registered successfully' });
+
+        const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify?token=${verificationToken}`;
+        const emailSent = await sendEmail(email, 'Verify Your Cashflowvest Account', `
+            <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
+              <h1 style="color:#00e676;">Welcome to Cashflowvest!</h1>
+              <p>Click the button below to verify your email and activate your account.</p>
+              <a href="${verifyUrl}" style="display:inline-block;background:linear-gradient(135deg,#00e676,#00b0ff);color:#131722;font-weight:bold;padding:14px 28px;border-radius:8px;text-decoration:none;margin:20px 0;">Verify My Account</a>
+              <p style="color:#9ca3af;font-size:0.85rem;">This link expires in 24 hours. If you didn't sign up, ignore this email.</p>
+            </div>
+        `);
+
+        const token = jwt.sign(
+            { id: newUser._id, role: newUser.role },
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '7d' }
+        );
+
+        res.status(201).json({
+            message: 'Registration successful! Proceed to deposit.',
+            token,
+            user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, referralCode: newUser.referralCode }
+        });
     } catch (error) {
         console.error('Registration error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Verify email token
+app.get('/api/auth/verify', async (req, res) => {
+    try {
+        const { token } = req.query;
+        const user = await User.findOne({ verificationToken: token });
+        if (!user) return res.status(400).json({ message: 'Invalid or expired verification link.' });
+
+        user.isVerified = true;
+        user.verificationToken = undefined;
+        await user.save();
+
+        res.json({ message: 'Email verified! You can now log in.' });
+    } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -84,30 +183,27 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        
-        // Check user
+
         const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
-        
-        // Check password
+        if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+        if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+
+        if (!user.isVerified) {
+            return res.status(403).json({ message: 'Please verify your email before logging in. Check your inbox.' });
         }
-        
-        // Create token
+
         const token = jwt.sign(
-            { id: user._id, role: user.role }, 
-            process.env.JWT_SECRET || 'fallback_secret', 
-            { expiresIn: '1d' }
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '7d' }
         );
-        
-        res.status(200).json({ 
-            token, 
-            user: { id: user._id, email: user.email, role: user.role },
-            message: 'Login successful' 
+
+        res.status(200).json({
+            token,
+            user: { id: user._id, email: user.email, role: user.role, referralCode: user.referralCode },
+            message: 'Login successful'
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -115,84 +211,172 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// Middleware to verify token
+// ─── FEATURE 2: Password Reset ──────────────────────────────────────────────
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.json({ message: 'If that email exists, a reset link has been sent.' });
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        user.resetPasswordToken  = resetToken;
+        user.resetPasswordExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        await user.save();
+
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+        await sendEmail(email, 'Reset Your Cashflowvest Password', `
+            <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
+              <h1 style="color:#f5a623;">Password Reset Request</h1>
+              <p>Click below to reset your password. This link is valid for 1 hour.</p>
+              <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#f5a623,#ff6b35);color:#131722;font-weight:bold;padding:14px 28px;border-radius:8px;text-decoration:none;margin:20px 0;">Reset My Password</a>
+              <p style="color:#9ca3af;font-size:0.85rem;">If you didn't request this, ignore this email. Your password is safe.</p>
+            </div>
+        `);
+
+        res.json({ message: 'If that email exists, a reset link has been sent.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { token, password } = req.body;
+        const user = await User.findOne({
+            resetPasswordToken:  token,
+            resetPasswordExpiry: { $gt: new Date() }
+        });
+        if (!user) return res.status(400).json({ message: 'Invalid or expired reset link.' });
+
+        const salt = await bcrypt.genSalt(10);
+        user.password            = await bcrypt.hash(password, salt);
+        user.resetPasswordToken  = undefined;
+        user.resetPasswordExpiry = undefined;
+        await user.save();
+
+        res.json({ message: 'Password reset successfully! You can now log in.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 const verifyToken = (req, res, next) => {
     const token = req.header('Authorization')?.split(' ')[1];
     if (!token) return res.status(401).json({ message: 'Access denied' });
     try {
-        const verified = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-        req.user = verified;
+        req.user = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
         next();
-    } catch (err) {
+    } catch {
         res.status(400).json({ message: 'Invalid token' });
     }
 };
 
-// --- USER DASHBOARD ROUTES ---
-
-// Get user data
-app.get('/api/user/dashboard', verifyToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('-password');
-        const investments = await Investment.find({ userId: req.user.id }).sort({ createdAt: -1 });
-        const transactions = await Transaction.find({ userId: req.user.id }).sort({ createdAt: -1 });
-        
-        res.json({ user, investments, transactions });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// Create investment (checkout)
-app.post('/api/invest', verifyToken, async (req, res) => {
-    try {
-        const { package: pkgName, amount, expectedReturn, paymentMethod } = req.body;
-        
-        // 1. Create a transaction for the deposit
-        const transaction = new Transaction({
-            userId: req.user.id,
-            type: 'deposit',
-            amount: Number(amount),
-            method: paymentMethod,
-            status: 'pending' // Admin needs to approve
-        });
-        await transaction.save();
-
-        // 2. Create the investment record (could also be marked pending)
-        const investment = new Investment({
-            userId: req.user.id,
-            package: pkgName,
-            amount: Number(amount),
-            expectedReturn,
-            status: 'pending' // Active once deposit is approved
-        });
-        await investment.save();
-
-        res.status(201).json({ message: 'Investment request submitted. Pending deposit verification.' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// --- ADMIN ROUTES ---
 const verifyAdmin = (req, res, next) => {
     verifyToken(req, res, () => {
-        if (req.user.role === 'admin') {
-            next();
-        } else {
-            res.status(403).json({ message: 'Admin access required' });
-        }
+        if (req.user.role === 'admin') next();
+        else res.status(403).json({ message: 'Admin access required' });
     });
 };
 
+// ─── FEATURE 4: Wallet Addresses ─────────────────────────────────────────────
+app.get('/api/wallet-addresses', verifyToken, (req, res) => {
+    res.json(WALLET_ADDRESSES);
+});
+
+// ─── USER DASHBOARD ───────────────────────────────────────────────────────────
+app.get('/api/user/dashboard', verifyToken, async (req, res) => {
+    try {
+        const user        = await User.findById(req.user.id).select('-password -verificationToken -resetPasswordToken');
+        const investments = await Investment.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        const transactions = await Transaction.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        res.json({ user, investments, transactions });
+    } catch {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ─── FEATURE 5: Investment with Timer ────────────────────────────────────────
+app.post('/api/invest', verifyToken, async (req, res) => {
+    try {
+        const { package: pkgName, amount, expectedReturn, paymentMethod } = req.body;
+
+        const returnPct  = parseFloat(expectedReturn) / 100;
+        const returnAmt  = parseFloat(amount) * (1 + returnPct);
+        const durationHrs = PACKAGE_DURATIONS[pkgName] || 6;
+        const endsAt     = new Date(Date.now() + durationHrs * 60 * 60 * 1000);
+
+        const transaction = new Transaction({
+            userId: req.user.id,
+            type:   'deposit',
+            amount: Number(amount),
+            method: paymentMethod,
+            status: 'pending'
+        });
+        await transaction.save();
+
+        const investment = new Investment({
+            userId:         req.user.id,
+            package:        pkgName,
+            amount:         Number(amount),
+            expectedReturn,
+            returnAmount:   returnAmt,
+            status:         'pending',
+            endsAt,
+        });
+        await investment.save();
+
+        transaction.investmentId = investment._id;
+        await transaction.save();
+
+        res.status(201).json({
+            message: 'Investment submitted! Awaiting deposit confirmation.',
+            investment: { id: investment._id, endsAt }
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ─── FEATURE 6: Withdrawal Request ────────────────────────────────────────────
+app.post('/api/withdraw', verifyToken, async (req, res) => {
+    try {
+        const { amount, method, walletAddress } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (user.balance < Number(amount)) {
+            return res.status(400).json({ message: 'Insufficient balance.' });
+        }
+
+        const withdrawal = new Transaction({
+            userId:        req.user.id,
+            type:          'withdrawal',
+            amount:        Number(amount),
+            method,
+            walletAddress,
+            status:        'pending'
+        });
+        await withdrawal.save();
+
+        // Deduct balance immediately, admin will confirm payout
+        user.balance -= Number(amount);
+        await user.save();
+
+        res.status(201).json({ message: 'Withdrawal request submitted. Processing within 24 hours.' });
+    } catch {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ─── ADMIN ROUTES ──────────────────────────────────────────────────────────────
 app.get('/api/admin/dashboard', verifyAdmin, async (req, res) => {
     try {
-        const users = await User.find().select('-password').sort({ createdAt: -1 });
-        const investments = await Investment.find().populate('userId', 'email').sort({ createdAt: -1 });
+        const users        = await User.find().select('-password').sort({ createdAt: -1 });
+        const investments  = await Investment.find().populate('userId', 'email').sort({ createdAt: -1 });
         const transactions = await Transaction.find().populate('userId', 'email').sort({ createdAt: -1 });
-        
         res.json({ users, investments, transactions });
-    } catch (error) {
+    } catch {
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -201,20 +385,44 @@ app.put('/api/admin/transaction/:id/approve', verifyAdmin, async (req, res) => {
     try {
         const transaction = await Transaction.findById(req.params.id);
         if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
-        
+
         transaction.status = 'completed';
         await transaction.save();
 
-        // Update user balance/profit logic would go here
-        
-        res.json({ message: 'Transaction approved', transaction });
-    } catch (error) {
+        // If it's a deposit, activate the linked investment and credit balance
+        if (transaction.type === 'deposit' && transaction.investmentId) {
+            const investment = await Investment.findById(transaction.investmentId);
+            if (investment) {
+                investment.status = 'active';
+                await investment.save();
+            }
+            await User.findByIdAndUpdate(transaction.userId, { $inc: { balance: transaction.amount } });
+        }
+
+        res.json({ message: 'Transaction approved successfully', transaction });
+    } catch {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.put('/api/admin/transaction/:id/reject', verifyAdmin, async (req, res) => {
+    try {
+        const transaction = await Transaction.findById(req.params.id);
+        if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
+
+        transaction.status = 'rejected';
+        await transaction.save();
+
+        // If it's a rejected withdrawal, refund the balance
+        if (transaction.type === 'withdrawal') {
+            await User.findByIdAndUpdate(transaction.userId, { $inc: { balance: transaction.amount } });
+        }
+
+        res.json({ message: 'Transaction rejected', transaction });
+    } catch {
         res.status(500).json({ message: 'Server error' });
     }
 });
 
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

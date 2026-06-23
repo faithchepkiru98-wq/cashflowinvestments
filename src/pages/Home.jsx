@@ -6,10 +6,12 @@ function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [authModal, setAuthModal] = useState({ isOpen: false, type: 'login' });
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState(null);
+  const [walletAddresses, setWalletAddresses] = useState(null);
   
   const navigate = useNavigate();
 
@@ -51,6 +53,7 @@ function Home() {
     e.preventDefault();
     setAuthModal({ isOpen: true, type });
     setMessage('');
+    setName('');
     setEmail('');
     setPassword('');
   };
@@ -75,21 +78,34 @@ function Home() {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(authModal.type === 'login' ? { email, password } : { name, email, password })
       });
       
       const data = await response.json();
       
       if (response.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+        
         if (authModal.type === 'login') {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-          setUser(data.user);
           setAuthModal({ isOpen: false, type: 'login' });
           navigate('/dashboard'); // Redirect to dashboard
         } else {
-          setMessage('Registration successful! Please login.');
-          setAuthModal({ ...authModal, type: 'login' });
+          // Fetch wallet addresses for the next step
+          try {
+            const walletRes = await fetch(`${API_URL}/api/wallet-addresses`, {
+              headers: { 'Authorization': `Bearer ${data.token}` }
+            });
+            if (walletRes.ok) {
+              const wallets = await walletRes.json();
+              setWalletAddresses(wallets);
+            }
+          } catch (err) {
+            console.error('Failed to fetch wallets');
+          }
+          setMessage('Registration successful! Next: Crypto Deposit.');
+          setAuthModal({ ...authModal, type: 'crypto_deposit' });
         }
       } else {
         setMessage(data.message || 'An error occurred');
@@ -198,7 +214,7 @@ function Home() {
               }}
             >&times;</button>
             <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>
-              {authModal.type === 'login' ? 'Welcome Back' : 'Create Account'}
+              {authModal.type === 'login' ? 'Welcome Back' : authModal.type === 'crypto_deposit' ? 'Crypto Deposit' : 'Create Account'}
             </h2>
             
             {message && (
@@ -215,53 +231,100 @@ function Home() {
               </div>
             )}
 
-            <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Email</label>
-                <input 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  style={{
-                    width: '100%', padding: '12px', borderRadius: '8px',
-                    background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                    color: 'white', outline: 'none'
-                  }}
-                />
+            {authModal.type === 'crypto_deposit' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', color: 'var(--text-secondary)' }}>
+                <p style={{ textAlign: 'center', marginBottom: '10px' }}>To activate your account and start investing, please make a deposit to one of the following addresses:</p>
+                {walletAddresses && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <strong style={{ color: 'white', display: 'block', marginBottom: '5px' }}>Bitcoin (BTC)</strong>
+                      <code style={{ color: 'var(--accent-blue)', wordBreak: 'break-all' }}>{walletAddresses.btc}</code>
+                    </div>
+                    <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <strong style={{ color: 'white', display: 'block', marginBottom: '5px' }}>Ethereum (ETH)</strong>
+                      <code style={{ color: 'var(--accent-blue)', wordBreak: 'break-all' }}>{walletAddresses.eth}</code>
+                    </div>
+                    <div style={{ background: 'var(--bg-main)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <strong style={{ color: 'white', display: 'block', marginBottom: '5px' }}>USDT (TRC20)</strong>
+                      <code style={{ color: 'var(--accent-blue)', wordBreak: 'break-all' }}>{walletAddresses.usdt}</code>
+                    </div>
+                  </div>
+                )}
+                <button 
+                  onClick={() => { setAuthModal({ isOpen: false, type: 'login' }); navigate('/dashboard'); }} 
+                  className="btn btn-primary btn-block" 
+                  style={{ marginTop: '15px' }}
+                >
+                  I have made a deposit
+                </button>
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Password</label>
-                <input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  style={{
-                    width: '100%', padding: '12px', borderRadius: '8px',
-                    background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                    color: 'white', outline: 'none'
-                  }}
-                />
-              </div>
-              <button type="submit" disabled={isLoading} className="btn btn-primary btn-block" style={{ marginTop: '10px' }}>
-                {isLoading ? 'Processing...' : (authModal.type === 'login' ? 'Login' : 'Sign Up')}
-              </button>
-            </form>
-            <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              {authModal.type === 'login' ? "Don't have an account? " : "Already have an account? "}
-              <a 
-                href="#" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  setAuthModal({ ...authModal, type: authModal.type === 'login' ? 'register' : 'login' });
-                  setMessage('');
-                }}
-                style={{ color: 'var(--accent-blue)' }}
-              >
-                {authModal.type === 'login' ? 'Sign Up' : 'Login'}
-              </a>
-            </p>
+            ) : (
+              <>
+                <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {authModal.type === 'register' && (
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Full Name</label>
+                      <input 
+                        type="text" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        style={{
+                          width: '100%', padding: '12px', borderRadius: '8px',
+                          background: 'var(--bg-main)', border: '1px solid var(--border-color)',
+                          color: 'white', outline: 'none'
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Email</label>
+                    <input 
+                      type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      style={{
+                        width: '100%', padding: '12px', borderRadius: '8px',
+                        background: 'var(--bg-main)', border: '1px solid var(--border-color)',
+                        color: 'white', outline: 'none'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Password</label>
+                    <input 
+                      type="password" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      style={{
+                        width: '100%', padding: '12px', borderRadius: '8px',
+                        background: 'var(--bg-main)', border: '1px solid var(--border-color)',
+                        color: 'white', outline: 'none'
+                      }}
+                    />
+                  </div>
+                  <button type="submit" disabled={isLoading} className="btn btn-primary btn-block" style={{ marginTop: '10px' }}>
+                    {isLoading ? 'Processing...' : (authModal.type === 'login' ? 'Login' : 'Sign Up')}
+                  </button>
+                </form>
+                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  {authModal.type === 'login' ? "Don't have an account? " : "Already have an account? "}
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setAuthModal({ ...authModal, type: authModal.type === 'login' ? 'register' : 'login' });
+                      setMessage('');
+                    }}
+                    style={{ color: 'var(--accent-blue)' }}
+                  >
+                    {authModal.type === 'login' ? 'Sign Up' : 'Login'}
+                  </a>
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}
