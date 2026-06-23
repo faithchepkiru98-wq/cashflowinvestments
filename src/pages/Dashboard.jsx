@@ -130,7 +130,35 @@ function Dashboard() {
     }
   };
 
-  if (!user || isLoading) return <div style={{ color: 'white', padding: '50px', textAlign: 'center' }}>Loading dashboard...</div>;
+  const handleWithdrawalSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`${API_URL}/api/withdraw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          amount: amount,
+          method: paymentMethod,
+          walletAddress: txId // Reusing txId state for walletAddress to save state vars
+        })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        addToast(data.message, 'success');
+        setAmount('');
+        setTxId('');
+        fetchDashboardData(token);
+        setActiveTab('transactions');
+      } else {
+        addToast(data.message, 'error');
+      }
+    } catch {
+      addToast('Network error', 'error');
+    }
+  };
+
+  if (!user) return <div style={{ color: 'white', padding: '50px', textAlign: 'center' }}>Loading dashboard...</div>;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
@@ -163,10 +191,10 @@ function Dashboard() {
       </header>
 
       {/* Dashboard Content */}
-      <div className="container" style={{ display: 'flex', flex: 1, padding: '40px 20px', gap: '30px' }}>
+      <div className="container" style={{ display: 'flex', flex: 1, padding: '40px 20px', gap: '30px', flexWrap: 'wrap' }}>
         
         {/* Sidebar */}
-        <aside style={{ width: '250px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <aside style={{ width: '100%', maxWidth: '250px', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
           <button 
             onClick={() => setActiveTab('overview')}
             style={{ 
@@ -211,10 +239,21 @@ function Dashboard() {
             }}>
             Transactions
           </button>
+          <button 
+            onClick={() => setActiveTab('withdraw')}
+            style={{ 
+              background: activeTab === 'withdraw' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+              color: activeTab === 'withdraw' ? '#ef4444' : 'var(--text-primary)',
+              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
+              borderLeft: activeTab === 'withdraw' ? '3px solid #ef4444' : '3px solid transparent',
+              transition: 'all 0.2s'
+            }}>
+            Withdraw Funds
+          </button>
         </aside>
 
         {/* Main Content Area */}
-        <main style={{ flex: 1, background: 'var(--bg-card)', borderRadius: '16px', padding: '30px', border: '1px solid var(--border-color)' }}>
+        <main style={{ flex: 1, minWidth: '300px', background: 'var(--bg-card)', borderRadius: '16px', padding: '30px', border: '1px solid var(--border-color)' }}>
           
           {activeTab === 'overview' && (
             <div>
@@ -234,10 +273,79 @@ function Dashboard() {
                 </div>
               </div>
               
+              {/* Referral Section */}
+              <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>Your Referral Code</h3>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Share this code and earn bonuses when friends sign up.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <code style={{ background: 'rgba(245, 166, 35, 0.1)', color: '#f5a623', padding: '10px 15px', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', border: '1px solid rgba(245, 166, 35, 0.3)' }}>
+                    {dashboardData.user?.referralCode || 'Loading...'}
+                  </code>
+                  <button onClick={() => { navigator.clipboard.writeText(dashboardData.user?.referralCode); addToast('Copied to clipboard!', 'success'); }} style={{ background: 'var(--accent-blue)', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer' }}>
+                    Copy
+                  </button>
+                </div>
+              </div>
+              
               <div style={{ background: 'var(--bg-main)', padding: '30px', borderRadius: '12px', textAlign: 'center', border: '1px dashed var(--border-color)' }}>
                 <h3 style={{ marginBottom: '15px' }}>Ready to grow your portfolio?</h3>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>Explore our high-yield investment packages and start earning today.</p>
                 <button onClick={() => setActiveTab('invest')} className="btn btn-primary">View Packages</button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'withdraw' && (
+            <div>
+              <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Withdraw Funds</h2>
+              <div style={{ background: 'var(--bg-main)', padding: '25px', borderRadius: '12px', border: '1px solid var(--border-color)', maxWidth: '500px' }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>Available Balance: <strong style={{ color: '#00e676', fontSize: '1.2rem' }}>${dashboardData.user?.balance?.toLocaleString() || '0.00'}</strong></p>
+                
+                <form onSubmit={handleWithdrawalSubmit}>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Amount to Withdraw (USD)</label>
+                    <input 
+                      type="number" 
+                      min="50"
+                      max={dashboardData.user?.balance || 0}
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      required
+                      placeholder="Min $50"
+                      style={{ width: '100%', padding: '15px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'white', outline: 'none' }}
+                    />
+                  </div>
+                  
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Withdrawal Method</label>
+                    <select 
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      style={{ width: '100%', padding: '15px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'white', outline: 'none', appearance: 'none' }}>
+                      <option value="usdt">USDT (TRC20)</option>
+                      <option value="btc">Bitcoin (BTC)</option>
+                      <option value="eth">Ethereum (ETH)</option>
+                    </select>
+                  </div>
+                  
+                  <div style={{ marginBottom: '30px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Destination Wallet Address</label>
+                    <input 
+                      type="text" 
+                      value={txId} // Reusing txId for wallet address
+                      onChange={(e) => setTxId(e.target.value)}
+                      required
+                      placeholder={`Enter your ${paymentMethod.toUpperCase()} address`}
+                      style={{ width: '100%', padding: '15px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'white', outline: 'none' }}
+                    />
+                  </div>
+                  
+                  <button type="submit" style={{ width: '100%', background: '#ef4444', color: 'white', fontWeight: 'bold', padding: '15px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '1.1rem' }} disabled={!dashboardData.user || dashboardData.user.balance < 50}>
+                    Request Withdrawal
+                  </button>
+                </form>
               </div>
             </div>
           )}

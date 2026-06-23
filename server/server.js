@@ -144,9 +144,12 @@ app.post('/api/auth/register', async (req, res) => {
         await newUser.save();
 
         const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify?token=${verificationToken}`;
-        const emailSent = await sendEmail(email, 'Verify Your Cashflowvest Account', `
+        const emailSent = await sendEmail(email, 'Welcome to Cashflowvest!', `
             <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
-              <h1 style="color:#00e676;">Welcome to Cashflowvest!</h1>
+              <h1 style="color:#00e676;">Welcome, ${name}!</h1>
+              <p>Thank you for joining Cashflowvest. We are excited to have you on board.</p>
+              <p>Your unique referral code is: <strong style="color:#f5a623;font-size:1.2rem;">${newUser.referralCode}</strong></p>
+              <p>Share this code with your friends and earn bonuses!</p>
               <p>Click the button below to verify your email and activate your account.</p>
               <a href="${verifyUrl}" style="display:inline-block;background:linear-gradient(135deg,#00e676,#00b0ff);color:#131722;font-weight:bold;padding:14px 28px;border-radius:8px;text-decoration:none;margin:20px 0;">Verify My Account</a>
               <p style="color:#9ca3af;font-size:0.85rem;">This link expires in 24 hours. If you didn't sign up, ignore this email.</p>
@@ -439,6 +442,20 @@ app.put('/api/admin/user/:id/balance', verifyAdmin, async (req, res) => {
         const { balance } = req.body;
         await User.findByIdAndUpdate(req.params.id, { balance: Number(balance) });
         res.json({ message: 'Balance updated successfully' });
+    } catch {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Admin: update user role
+app.put('/api/admin/user/:id/role', verifyAdmin, async (req, res) => {
+    try {
+        const { role } = req.body;
+        if (!['user', 'admin'].includes(role)) {
+            return res.status(400).json({ message: 'Invalid role' });
+        }
+        await User.findByIdAndUpdate(req.params.id, { role });
+        res.json({ message: \`User role updated to \${role}\` });
     } catch {
         res.status(500).json({ message: 'Server error' });
     }

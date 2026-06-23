@@ -123,6 +123,19 @@ function AdminDashboard() {
     } catch { addToast('Network error', 'error'); }
   };
 
+  const handleUpdateRole = async (userId, newRole) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/user/${userId}/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ role: newRole })
+      });
+      if (res.ok) { addToast(`Role updated to ${newRole}`, 'success'); fetchAdminData(token); }
+      else addToast('Failed to update role', 'error');
+    } catch { addToast('Network error', 'error'); }
+  };
+
   const handleLogout = () => { localStorage.clear(); navigate('/'); };
 
   if (isLoading) return (
@@ -167,10 +180,10 @@ function AdminDashboard() {
         </div>
       </header>
 
-      <div className="container" style={{ display: 'flex', flex: 1, padding: '30px 20px', gap: '25px' }}>
+      <div className="container" style={{ display: 'flex', flex: 1, padding: '30px 20px', gap: '25px', flexWrap: 'wrap' }}>
 
         {/* Sidebar */}
-        <aside style={{ width: '220px', flexShrink: 0 }}>
+        <aside style={{ width: '100%', maxWidth: '220px', flexShrink: 0 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             {navItems.map(item => (
               <button key={item.key} onClick={() => setActiveTab(item.key)} style={{
@@ -193,13 +206,13 @@ function AdminDashboard() {
         </aside>
 
         {/* Main */}
-        <main style={{ flex: 1, minWidth: 0 }}>
+        <main style={{ flex: 1, minWidth: '300px' }}>
           {/* Stats Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '25px' }}>
-            <StatCard label="Total Users"        value={adminData.users.length}                        color="white"    icon="👥" />
-            <StatCard label="Total Invested"     value={`$${deposits.filter(d=>d.status==='completed').reduce((s,d)=>s+d.amount,0).toLocaleString()}`} color="#00e676" icon="💰" />
-            <StatCard label="Pending Deposits"   value={pendingDeps}                                   color="#f59e0b"  icon="⏳" />
-            <StatCard label="Pending Withdrawals" value={pendingWithd}                                 color="#ef4444"  icon="📤" />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '25px' }}>
+            <div style={{flex: '1 1 200px'}}><StatCard label="Total Users"        value={adminData.users.length}                        color="white"    icon="👥" /></div>
+            <div style={{flex: '1 1 200px'}}><StatCard label="Total Invested"     value={`$${deposits.filter(d=>d.status==='completed').reduce((s,d)=>s+d.amount,0).toLocaleString()}`} color="#00e676" icon="💰" /></div>
+            <div style={{flex: '1 1 200px'}}><StatCard label="Pending Deposits"   value={pendingDeps}                                   color="#f59e0b"  icon="⏳" /></div>
+            <div style={{flex: '1 1 200px'}}><StatCard label="Pending Withdrawals" value={pendingWithd}                                 color="#ef4444"  icon="📤" /></div>
           </div>
 
           {/* Content Card */}
@@ -360,9 +373,20 @@ function AdminDashboard() {
                         <td style={tdStyle}><Badge status={u.role} /></td>
                         <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
                         <td style={tdStyle}>
-                          <button onClick={() => { setEditUser(u); setEditBalance(u.balance || 0); }} style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623', border: '1px solid #f5a623', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
-                            ✏️ Edit Balance
-                          </button>
+                          <div style={{display:'flex', gap:'5px', flexWrap:'wrap'}}>
+                            <button onClick={() => { setEditUser(u); setEditBalance(u.balance || 0); }} style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623', border: '1px solid #f5a623', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                              ✏️ Edit Balance
+                            </button>
+                            {u.role === 'user' ? (
+                              <button onClick={() => handleUpdateRole(u._id, 'admin')} style={{ background: 'rgba(129,140,248,0.15)', color: '#818cf8', border: '1px solid #818cf8', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                👑 Make Admin
+                              </button>
+                            ) : (
+                              <button onClick={() => handleUpdateRole(u._id, 'user')} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid #ef4444', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                ⬇️ Revoke Admin
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

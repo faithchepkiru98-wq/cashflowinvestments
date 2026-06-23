@@ -19,6 +19,21 @@ function Home() {
   
   const navigate = useNavigate();
 
+  const getPasswordStrength = (pass) => {
+    if (!pass) return { score: 0, label: '', color: 'transparent' };
+    let score = 0;
+    if (pass.length >= 8) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+  
+    if (score < 2) return { score, label: 'Weak', color: '#ef4444' };
+    if (score < 4) return { score, label: 'Medium', color: '#f5a623' };
+    return { score, label: 'Strong', color: '#10b981' };
+  };
+
+  const strength = getPasswordStrength(password);
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -350,6 +365,17 @@ function Home() {
                     >
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
+                    {authModal.type === 'register' && password.length > 0 && (
+                      <div style={{ marginTop: '8px' }}>
+                        <div style={{ display: 'flex', gap: '5px', height: '4px', marginBottom: '5px' }}>
+                          <div style={{ flex: 1, background: strength.score >= 1 ? strength.color : 'rgba(255,255,255,0.1)', borderRadius: '2px', transition: 'all 0.3s' }}></div>
+                          <div style={{ flex: 1, background: strength.score >= 2 ? strength.color : 'rgba(255,255,255,0.1)', borderRadius: '2px', transition: 'all 0.3s' }}></div>
+                          <div style={{ flex: 1, background: strength.score >= 3 ? strength.color : 'rgba(255,255,255,0.1)', borderRadius: '2px', transition: 'all 0.3s' }}></div>
+                          <div style={{ flex: 1, background: strength.score >= 4 ? strength.color : 'rgba(255,255,255,0.1)', borderRadius: '2px', transition: 'all 0.3s' }}></div>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: strength.color, fontWeight: 'bold' }}>{strength.label} Password</span>
+                      </div>
+                    )}
                   </div>
                   <button type="submit" disabled={isLoading} className="btn btn-primary btn-block" style={{ marginTop: '10px' }}>
                     {isLoading ? 'Processing...' : (authModal.type === 'login' ? 'Login' : 'Sign Up')}
