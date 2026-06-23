@@ -221,6 +221,17 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// TEMPORARY ADMIN CREATOR ROUTE
+app.get('/api/auth/make-me-admin/:email', async (req, res) => {
+    try {
+        const user = await User.findOneAndUpdate({ email: req.params.email }, { role: 'admin' });
+        if (!user) return res.send('<h1>User not found! Check your email spelling.</h1>');
+        res.send('<h1>Success! You are now an Admin! 👑</h1><h2>Go back to the website, LOGOUT, and LOG BACK IN.</h2>');
+    } catch {
+        res.send('<h1>Error making admin.</h1>');
+    }
+});
+
 // ─── FEATURE 2: Password Reset ──────────────────────────────────────────────
 app.post('/api/auth/forgot-password', async (req, res) => {
     try {
