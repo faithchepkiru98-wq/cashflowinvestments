@@ -393,6 +393,11 @@ function Home() {
                       </div>
                     )}
                   </div>
+                  {authModal.type === 'login' && (
+                    <div style={{ textAlign: 'right', marginTop: '-5px' }}>
+                      <a href="/forgot-password" onClick={(e) => { e.preventDefault(); setAuthModal({ ...authModal, isOpen: false }); navigate('/forgot-password'); }} style={{ color: 'var(--accent-blue)', fontSize: '0.8rem' }}>Forgot Password?</a>
+                    </div>
+                  )}
                   <button type="submit" disabled={isLoading} className="btn btn-primary btn-block" style={{ marginTop: '10px' }}>
                     {isLoading ? 'Processing...' : (authModal.type === 'login' ? 'Login' : 'Sign Up')}
                   </button>
