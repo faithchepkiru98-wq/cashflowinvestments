@@ -455,7 +455,7 @@ app.put('/api/admin/user/:id/role', verifyAdmin, async (req, res) => {
             return res.status(400).json({ message: 'Invalid role' });
         }
         await User.findByIdAndUpdate(req.params.id, { role });
-        res.json({ message: \`User role updated to \${role}\` });
+        res.json({ message: `User role updated to ${role}` });
     } catch {
         res.status(500).json({ message: 'Server error' });
     }
