@@ -480,42 +480,42 @@ function Home() {
             <div className="packages-grid">
               <div className="package-card">
                 <div className="package-header">
-                  <h3>Cardano</h3>
-                  <div className="return-badge">10% Returns</div>
+                  <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>🌱</span>Starter</h3>
+                  <div className="return-badge" style={{ background: '#10b98120', color: '#10b981' }}>8% Returns</div>
                 </div>
                 <div className="package-price">
-                  <span className="amount">$200 - $500</span>
+                  <span className="amount">$50 - $499</span>
                 </div>
                 <ul className="package-features">
                   <li><i className="icon-check"></i> 6 Hours Duration</li>
                   <li><i className="icon-check"></i> 24/7 Support</li>
                   <li><i className="icon-check"></i> Instant Withdrawals</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Cardano')} className="btn btn-outline btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Starter')} className="btn btn-outline btn-block">Invest Now</a>
               </div>
               <div className="package-card popular">
                 <div className="popular-badge">Most Popular</div>
                 <div className="package-header">
-                  <h3>Solana</h3>
-                  <div className="return-badge">12% Returns</div>
+                  <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>⭐</span>Basic</h3>
+                  <div className="return-badge" style={{ background: '#00b0ff20', color: '#00b0ff' }}>10% Returns</div>
                 </div>
                 <div className="package-price">
-                  <span className="amount">$1,000 - $3,000</span>
+                  <span className="amount">$500 - $1,999</span>
                 </div>
                 <ul className="package-features">
                   <li><i className="icon-check"></i> 9 Hours Duration</li>
                   <li><i className="icon-check"></i> 24/7 Support</li>
                   <li><i className="icon-check"></i> Instant Withdrawals</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Solana')} className="btn btn-primary btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Basic')} className="btn btn-primary btn-block">Invest Now</a>
               </div>
               <div className="package-card">
                 <div className="package-header">
-                  <h3>Bronze</h3>
-                  <div className="return-badge">15% Returns</div>
+                  <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>🥉</span>Bronze</h3>
+                  <div className="return-badge" style={{ background: '#cd7f3220', color: '#cd7f32' }}>15% Returns</div>
                 </div>
                 <div className="package-price">
-                  <span className="amount">$5,000 - $8,000</span>
+                  <span className="amount">$2,000 - $4,999</span>
                 </div>
                 <ul className="package-features">
                   <li><i className="icon-check"></i> 12 Hours Duration</li>
@@ -526,29 +526,29 @@ function Home() {
               </div>
               <div className="package-card">
                 <div className="package-header">
-                  <h3>Platinum</h3>
-                  <div className="return-badge">20% Returns</div>
+                  <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>🥈</span>Silver</h3>
+                  <div className="return-badge" style={{ background: '#9ca3af20', color: '#9ca3af' }}>20% Returns</div>
                 </div>
                 <div className="package-price">
-                  <span className="amount">$12,000 - $15,000</span>
-                </div>
-                <ul className="package-features">
-                  <li><i className="icon-check"></i> 12 Hours Duration</li>
-                  <li><i className="icon-check"></i> Dedicated Manager</li>
-                  <li><i className="icon-check"></i> Priority Support</li>
-                </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Platinum')} className="btn btn-outline btn-block">Invest Now</a>
-              </div>
-              <div className="package-card">
-                <div className="package-header">
-                  <h3>Gold</h3>
-                  <div className="return-badge">25% Returns</div>
-                </div>
-                <div className="package-price">
-                  <span className="amount">$20,000 - $25,000</span>
+                  <span className="amount">$5,000 - $14,999</span>
                 </div>
                 <ul className="package-features">
                   <li><i className="icon-check"></i> 15 Hours Duration</li>
+                  <li><i className="icon-check"></i> Dedicated Manager</li>
+                  <li><i className="icon-check"></i> Priority Support</li>
+                </ul>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Silver')} className="btn btn-outline btn-block">Invest Now</a>
+              </div>
+              <div className="package-card">
+                <div className="package-header">
+                  <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>🥇</span>Gold</h3>
+                  <div className="return-badge" style={{ background: '#f5a62320', color: '#f5a623' }}>25% Returns</div>
+                </div>
+                <div className="package-price">
+                  <span className="amount">$15,000 - $29,999</span>
+                </div>
+                <ul className="package-features">
+                  <li><i className="icon-check"></i> 24 Hours Duration</li>
                   <li><i className="icon-check"></i> Dedicated Manager</li>
                   <li><i className="icon-check"></i> Priority Support</li>
                 </ul>
@@ -556,18 +556,18 @@ function Home() {
               </div>
               <div className="package-card premium">
                 <div className="package-header">
-                  <h3>Swift</h3>
-                  <div className="return-badge">30% Returns</div>
+                  <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>💎</span>Diamond</h3>
+                  <div className="return-badge" style={{ background: '#818cf820', color: '#818cf8' }}>30% Returns</div>
                 </div>
                 <div className="package-price">
-                  <span className="amount">$30,000 - $40,000</span>
+                  <span className="amount">$30,000 - $100,000</span>
                 </div>
                 <ul className="package-features">
-                  <li><i className="icon-check"></i> 1 Day Duration</li>
+                  <li><i className="icon-check"></i> 48 Hours Duration</li>
                   <li><i className="icon-check"></i> VIP Manager</li>
                   <li><i className="icon-check"></i> Exclusive Perks</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Swift')} className="btn btn-primary btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Diamond')} className="btn btn-primary btn-block">Invest Now</a>
               </div>
             </div>
           </div>

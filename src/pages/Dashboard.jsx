@@ -1,50 +1,106 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
-// ── Live Investment Gains Card ───────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function calcLiveEarnings(inv) {
+  const pct    = parseFloat(inv.expectedReturn) / 100;
+  const total  = inv.amount * pct;
+  const startMs  = new Date(inv.createdAt).getTime();
+  const endMs    = inv.endsAt ? new Date(inv.endsAt).getTime() : startMs + 6 * 3600000;
+  const durMs    = Math.max(endMs - startMs, 1);
+  const elapsed  = Math.min(Date.now() - startMs, durMs);
+  return (total * elapsed) / durMs;
+}
+
+function formatTimeLeft(endsAt) {
+  const ms = new Date(endsAt).getTime() - Date.now();
+  if (ms <= 0) return 'Completed';
+  const h  = Math.floor(ms / 3600000);
+  const m  = Math.floor((ms % 3600000) / 60000);
+  const s  = Math.floor((ms % 60000) / 1000);
+  if (h > 0) return `${h}h ${m}m left`;
+  if (m > 0) return `${m}m ${s}s left`;
+  return `${s}s left`;
+}
+
+// ── Live Balance Ticker (Overview) ───────────────────────────────────────────
+function LiveBalance({ baseBalance, investments }) {
+  const activeInvs = investments.filter(inv => inv.status === 'active');
+
+  const computeTotal = () =>
+    (baseBalance || 0) + activeInvs.reduce((sum, inv) => sum + calcLiveEarnings(inv), 0);
+
+  const [total, setTotal] = useState(computeTotal);
+
+  useEffect(() => {
+    setTotal(computeTotal());
+    if (!activeInvs.length) return;
+    const t = setInterval(() => setTotal(computeTotal()), 1000);
+    return () => clearInterval(t);
+  }, [baseBalance, investments]);
+
+  const hasActive = activeInvs.length > 0;
+  return (
+    <div style={{ position: 'relative' }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '8px' }}>Total Balance</p>
+      <h3 style={{ fontSize: '2.2rem', fontWeight: '800', fontFamily: 'monospace', letterSpacing: '-1px',
+        background: hasActive ? 'linear-gradient(90deg,#00e676,#00b0ff)' : 'none',
+        WebkitBackgroundClip: hasActive ? 'text' : 'unset',
+        WebkitTextFillColor: hasActive ? 'transparent' : 'white',
+        color: hasActive ? 'transparent' : 'white'
+      }}>
+        ${total.toFixed(hasActive ? 4 : 2)}
+      </h3>
+      {hasActive && (
+        <span style={{ fontSize: '0.72rem', color: '#00e676', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00e676', display: 'inline-block', animation: 'pulse 1s infinite' }} />
+          Live — earning now
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ── Live Investment Card ──────────────────────────────────────────────────────
 function InvestmentCard({ inv, packages }) {
-  const pkgData = packages[inv.package] || {};
-  const pct = parseFloat(pkgData.returns) || 0; // e.g. 10 for "10%"
+  const pkgData    = packages[inv.package] || {};
+  const pct        = parseFloat(pkgData.returns || inv.expectedReturn) || 0;
+  const totalGain  = (inv.amount * pct) / 100;
 
-  // Total gain the investor should earn over the full duration (30 days)
-  const totalGain = (inv.amount * pct) / 100;
-  const durationMs = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+  const startMs = new Date(inv.createdAt).getTime();
+  const endMs   = inv.endsAt ? new Date(inv.endsAt).getTime() : startMs + 6 * 3600000;
+  const durMs   = Math.max(endMs - startMs, 1);
 
-  // How much has elapsed since the investment was created
-  const startTime = new Date(inv.createdAt).getTime();
-  const calcEarned = () => {
+  const getEarned = () => {
     if (inv.status !== 'active') return totalGain;
-    const elapsed = Math.min(Date.now() - startTime, durationMs);
-    return (totalGain * elapsed) / durationMs;
+    return calcLiveEarnings(inv);
   };
 
-  const [earned, setEarned] = useState(calcEarned);
+  const [earned, setEarned]     = useState(getEarned);
+  const [timeLeft, setTimeLeft] = useState(() => inv.endsAt ? formatTimeLeft(inv.endsAt) : '');
   const intervalRef = useRef(null);
 
   useEffect(() => {
     if (inv.status !== 'active') return;
     intervalRef.current = setInterval(() => {
-      setEarned(calcEarned());
+      setEarned(getEarned());
+      if (inv.endsAt) setTimeLeft(formatTimeLeft(inv.endsAt));
     }, 1000);
     return () => clearInterval(intervalRef.current);
   }, [inv._id]);
 
-  const progress = Math.min((earned / totalGain) * 100, 100);
-  const elapsed = Date.now() - startTime;
-  const daysLeft = Math.max(0, Math.ceil((durationMs - elapsed) / (1000 * 60 * 60 * 24)));
+  const progress = Math.min(totalGain > 0 ? (earned / totalGain) * 100 : 0, 100);
 
   return (
     <div style={{ background: 'var(--bg-main)', border: `1px solid ${inv.status === 'active' ? 'rgba(0,230,118,0.2)' : 'var(--border-color)'}`, borderRadius: '16px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
-      {/* Glow effect for active */}
       {inv.status === 'active' && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, #00e676, transparent)' }} />
       )}
 
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
         <div>
           <h3 style={{ fontSize: '1.3rem', marginBottom: '4px' }}>{inv.package}</h3>
-          <span style={{ color: '#f5a623', fontSize: '0.85rem', fontWeight: 'bold' }}>{pkgData.returns} monthly return</span>
+          <span style={{ color: '#f5a623', fontSize: '0.85rem', fontWeight: 'bold' }}>{pkgData.returns || inv.expectedReturn} return</span>
         </div>
         <span style={{
           color: inv.status === 'active' ? '#10b981' : '#f59e0b',
@@ -54,45 +110,32 @@ function InvestmentCard({ inv, packages }) {
         }}>{inv.status}</span>
       </div>
 
-      {/* Principal */}
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Principal Invested</p>
-      <p style={{ color: 'white', fontSize: '1.6rem', fontWeight: 'bold', marginBottom: '20px' }}>
-        ${inv.amount.toLocaleString()}
-      </p>
+      <p style={{ color: 'white', fontSize: '1.6rem', fontWeight: 'bold', marginBottom: '20px' }}>${inv.amount.toLocaleString()}</p>
 
-      {/* Live Gains */}
       <div style={{ background: 'rgba(0,230,118,0.05)', border: '1px solid rgba(0,230,118,0.15)', borderRadius: '12px', padding: '16px', marginBottom: '18px' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '6px' }}>
           {inv.status === 'active' ? '⚡ Live Earnings' : '✅ Total Earned'}
         </p>
-        <p style={{ color: '#00e676', fontSize: '2rem', fontWeight: '800', fontFamily: 'monospace', letterSpacing: '-1px' }}>
-          +${earned.toFixed(4)}
-        </p>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '4px' }}>
-          of ${totalGain.toLocaleString(undefined, { maximumFractionDigits: 2 })} total return
-        </p>
+        <p style={{ color: '#00e676', fontSize: '2rem', fontWeight: '800', fontFamily: 'monospace', letterSpacing: '-1px' }}>+${earned.toFixed(4)}</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '4px' }}>of ${totalGain.toLocaleString(undefined, { maximumFractionDigits: 2 })} total return</p>
       </div>
 
-      {/* Progress bar */}
       <div style={{ marginBottom: '14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>Progress</span>
           <span style={{ color: '#00e676', fontSize: '0.78rem', fontWeight: 'bold' }}>{progress.toFixed(2)}%</span>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '10px', height: '8px', overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', borderRadius: '10px', width: `${progress}%`,
-            background: 'linear-gradient(90deg, #00e676, #00b0ff)',
-            transition: 'width 1s linear',
-            boxShadow: '0 0 10px rgba(0,230,118,0.5)'
-          }} />
+          <div style={{ height: '100%', borderRadius: '10px', width: `${progress}%`, background: 'linear-gradient(90deg, #00e676, #00b0ff)', transition: 'width 1s linear', boxShadow: '0 0 10px rgba(0,230,118,0.5)' }} />
         </div>
       </div>
 
-      {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
         <span>📅 Started: {new Date(inv.createdAt).toLocaleDateString()}</span>
-        {inv.status === 'active' && <span>⏳ {daysLeft}d left</span>}
+        {inv.status === 'active' && inv.endsAt && (
+          <span style={{ color: '#f5a623', fontWeight: '600' }}>⏳ {timeLeft}</span>
+        )}
       </div>
     </div>
   );
@@ -125,13 +168,15 @@ function Dashboard() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
   
+  // Progressive packages — starts at $50, each tier unlocks higher returns.
+  // Durations live on the server (PACKAGE_DURATIONS); client only needs display info.
   const packages = {
-    'Cardano': { returns: '10%', min: 200, max: 500 },
-    'Solana': { returns: '12%', min: 1000, max: 3000 },
-    'Bronze': { returns: '15%', min: 5000, max: 8000 },
-    'Platinum': { returns: '20%', min: 12000, max: 15000 },
-    'Gold': { returns: '25%', min: 20000, max: 25000 },
-    'Swift': { returns: '30%', min: 30000, max: 40000 }
+    'Starter':  { returns: '8%',  min: 50,    max: 499,   badge: '🌱', color: '#10b981' },
+    'Basic':    { returns: '10%', min: 500,   max: 1999,  badge: '⭐', color: '#00b0ff' },
+    'Bronze':   { returns: '15%', min: 2000,  max: 4999,  badge: '🥉', color: '#cd7f32' },
+    'Silver':   { returns: '20%', min: 5000,  max: 14999, badge: '🥈', color: '#9ca3af' },
+    'Gold':     { returns: '25%', min: 15000, max: 29999, badge: '🥇', color: '#f5a623' },
+    'Diamond':  { returns: '30%', min: 30000, max: 100000,badge: '💎', color: '#818cf8' },
   };
 
   useEffect(() => {
@@ -362,8 +407,7 @@ function Dashboard() {
               <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Account Overview</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px' }}>
                 <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Total Balance</p>
-                  <h3 style={{ fontSize: '2rem', color: 'white' }}>${dashboardData.user?.balance?.toLocaleString() || '0.00'}</h3>
+                  <LiveBalance baseBalance={dashboardData.user?.balance} investments={dashboardData.investments || []} />
                 </div>
                 <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Active Investments</p>
@@ -489,10 +533,15 @@ function Dashboard() {
               <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Available Packages</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
                 {Object.keys(packages).map((pkg) => (
-                  <div key={pkg} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                      <h3 style={{ fontSize: '1.2rem' }}>{pkg}</h3>
-                      <span style={{ color: 'var(--accent-blue)', background: 'rgba(59,130,246,0.1)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{packages[pkg].returns} Return</span>
+                  <div key={pkg} style={{ background: 'var(--bg-main)', border: `1px solid ${packages[pkg].color}40`, borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: packages[pkg].color }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
+                      <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.5rem' }}>{packages[pkg].badge}</span> {pkg}
+                      </h3>
+                      <span style={{ color: packages[pkg].color, background: `${packages[pkg].color}20`, padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                        {packages[pkg].returns} Return
+                      </span>
                     </div>
                     <p style={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '20px' }}>
                       ${packages[pkg].min.toLocaleString()} - ${packages[pkg].max.toLocaleString()}

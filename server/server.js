@@ -74,12 +74,12 @@ const User = mongoose.model('User', userSchema);
 
 // Investment packages durations (in hours)
 const PACKAGE_DURATIONS = {
-    'Cardano':  6,
-    'Solana':   9,
+    'Starter':  6,
+    'Basic':    9,
     'Bronze':   12,
-    'Platinum': 12,
-    'Gold':     15,
-    'Swift':    24
+    'Silver':   15,
+    'Gold':     24,
+    'Diamond':  48
 };
 
 const investmentSchema = new mongoose.Schema({
