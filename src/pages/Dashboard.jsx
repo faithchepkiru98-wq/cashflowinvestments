@@ -671,10 +671,11 @@ function Dashboard() {
                         padding: '12px',
                         borderRadius: '8px',
                         cursor: 'pointer',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        boxShadow: `0 0 10px ${packages[pkg].color}40`
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = packages[pkg].color; e.currentTarget.style.color = '#131722'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = `${packages[pkg].color}15`; e.currentTarget.style.color = packages[pkg].color; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = packages[pkg].color; e.currentTarget.style.color = '#131722'; e.currentTarget.style.boxShadow = `0 0 20px ${packages[pkg].color}`; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = `${packages[pkg].color}15`; e.currentTarget.style.color = packages[pkg].color; e.currentTarget.style.boxShadow = `0 0 10px ${packages[pkg].color}40`; }}
                     >
                       Invest Now →
                     </button>

@@ -653,7 +653,7 @@ function Home() {
                   <li><i className="icon-check"></i> 24/7 Support</li>
                   <li><i className="icon-check"></i> Instant Withdrawals</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Starter')} className="btn btn-outline btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Starter')} className="btn btn-block" style={{ background: '#10b98115', color: '#10b981', border: '1px solid #10b98160', transition: 'all 0.2s', boxShadow: '0 0 10px #10b98140' }} onMouseEnter={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = '#131722'; e.currentTarget.style.boxShadow = '0 0 20px #10b981'; }} onMouseLeave={e => { e.currentTarget.style.background = '#10b98115'; e.currentTarget.style.color = '#10b981'; e.currentTarget.style.boxShadow = '0 0 10px #10b98140'; }}>Invest Now</a>
               </div>
               <div className="package-card popular">
                 <div className="popular-badge">Most Popular</div>
@@ -669,7 +669,7 @@ function Home() {
                   <li><i className="icon-check"></i> 24/7 Support</li>
                   <li><i className="icon-check"></i> Instant Withdrawals</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Basic')} className="btn btn-primary btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Basic')} className="btn btn-block" style={{ background: '#00b0ff15', color: '#00b0ff', border: '1px solid #00b0ff60', transition: 'all 0.2s', boxShadow: '0 0 10px #00b0ff40' }} onMouseEnter={e => { e.currentTarget.style.background = '#00b0ff'; e.currentTarget.style.color = '#131722'; e.currentTarget.style.boxShadow = '0 0 20px #00b0ff'; }} onMouseLeave={e => { e.currentTarget.style.background = '#00b0ff15'; e.currentTarget.style.color = '#00b0ff'; e.currentTarget.style.boxShadow = '0 0 10px #00b0ff40'; }}>Invest Now</a>
               </div>
               <div className="package-card">
                 <div className="package-header">
@@ -684,7 +684,7 @@ function Home() {
                   <li><i className="icon-check"></i> 24/7 Support</li>
                   <li><i className="icon-check"></i> Instant Withdrawals</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Bronze')} className="btn btn-outline btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Bronze')} className="btn btn-block" style={{ background: '#cd7f3215', color: '#cd7f32', border: '1px solid #cd7f3260', transition: 'all 0.2s', boxShadow: '0 0 10px #cd7f3240' }} onMouseEnter={e => { e.currentTarget.style.background = '#cd7f32'; e.currentTarget.style.color = '#131722'; e.currentTarget.style.boxShadow = '0 0 20px #cd7f32'; }} onMouseLeave={e => { e.currentTarget.style.background = '#cd7f3215'; e.currentTarget.style.color = '#cd7f32'; e.currentTarget.style.boxShadow = '0 0 10px #cd7f3240'; }}>Invest Now</a>
               </div>
               <div className="package-card">
                 <div className="package-header">
@@ -699,7 +699,7 @@ function Home() {
                   <li><i className="icon-check"></i> Dedicated Manager</li>
                   <li><i className="icon-check"></i> Priority Support</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Silver')} className="btn btn-outline btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Silver')} className="btn btn-block" style={{ background: '#9ca3af15', color: '#9ca3af', border: '1px solid #9ca3af60', transition: 'all 0.2s', boxShadow: '0 0 10px #9ca3af40' }} onMouseEnter={e => { e.currentTarget.style.background = '#9ca3af'; e.currentTarget.style.color = '#131722'; e.currentTarget.style.boxShadow = '0 0 20px #9ca3af'; }} onMouseLeave={e => { e.currentTarget.style.background = '#9ca3af15'; e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.boxShadow = '0 0 10px #9ca3af40'; }}>Invest Now</a>
               </div>
               <div className="package-card">
                 <div className="package-header">
@@ -714,7 +714,7 @@ function Home() {
                   <li><i className="icon-check"></i> Dedicated Manager</li>
                   <li><i className="icon-check"></i> Priority Support</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Gold')} className="btn btn-outline btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Gold')} className="btn btn-block" style={{ background: '#f5a62315', color: '#f5a623', border: '1px solid #f5a62360', transition: 'all 0.2s', boxShadow: '0 0 10px #f5a62340' }} onMouseEnter={e => { e.currentTarget.style.background = '#f5a623'; e.currentTarget.style.color = '#131722'; e.currentTarget.style.boxShadow = '0 0 20px #f5a623'; }} onMouseLeave={e => { e.currentTarget.style.background = '#f5a62315'; e.currentTarget.style.color = '#f5a623'; e.currentTarget.style.boxShadow = '0 0 10px #f5a62340'; }}>Invest Now</a>
               </div>
               <div className="package-card premium">
                 <div className="package-header">
@@ -729,7 +729,7 @@ function Home() {
                   <li><i className="icon-check"></i> VIP Manager</li>
                   <li><i className="icon-check"></i> Exclusive Perks</li>
                 </ul>
-                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Diamond')} className="btn btn-primary btn-block">Invest Now</a>
+                <a href="#invest" onClick={(e) => handleInvestClick(e, 'Diamond')} className="btn btn-block" style={{ background: '#818cf815', color: '#818cf8', border: '1px solid #818cf860', transition: 'all 0.2s', boxShadow: '0 0 10px #818cf840' }} onMouseEnter={e => { e.currentTarget.style.background = '#818cf8'; e.currentTarget.style.color = '#131722'; e.currentTarget.style.boxShadow = '0 0 20px #818cf8'; }} onMouseLeave={e => { e.currentTarget.style.background = '#818cf815'; e.currentTarget.style.color = '#818cf8'; e.currentTarget.style.boxShadow = '0 0 10px #818cf840'; }}>Invest Now</a>
               </div>
             </div>
           </div>
