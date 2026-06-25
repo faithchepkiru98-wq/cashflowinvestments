@@ -63,6 +63,9 @@ function AdminDashboard() {
   const [toasts, setToasts]       = useState([]);
   const [editUser, setEditUser]   = useState(null);
   const [editBalance, setEditBalance] = useState('');
+  const [settings, setSettings]   = useState(null);
+  const [settingsDraft, setSettingsDraft] = useState({});
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -76,11 +79,17 @@ function AdminDashboard() {
 
   const fetchAdminData = useCallback(async (token) => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/dashboard`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) setAdminData(await res.json());
-      else if (res.status === 403) { addToast('Admin access required', 'error'); navigate('/'); }
+      const [dataRes, settingsRes] = await Promise.all([
+        fetch(`${API_URL}/api/admin/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/admin/settings`,  { headers: { 'Authorization': `Bearer ${token}` } }),
+      ]);
+      if (dataRes.ok) setAdminData(await dataRes.json());
+      else if (dataRes.status === 403) { addToast('Admin access required', 'error'); navigate('/'); }
+      if (settingsRes.ok) {
+        const s = await settingsRes.json();
+        setSettings(s);
+        setSettingsDraft(s);
+      }
     } catch { addToast('Failed to load admin data', 'error'); }
     finally { setIsLoading(false); }
   }, [API_URL, navigate]);
@@ -136,6 +145,27 @@ function AdminDashboard() {
     } catch { addToast('Network error', 'error'); }
   };
 
+  const handleSaveSettings = async () => {
+    const token = localStorage.getItem('token');
+    setIsSavingSettings(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(settingsDraft)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSettings(data.settings);
+        setSettingsDraft(data.settings);
+        addToast('Settings saved successfully!', 'success');
+      } else {
+        addToast(data.message || 'Failed to save settings', 'error');
+      }
+    } catch { addToast('Network error', 'error'); }
+    finally { setIsSavingSettings(false); }
+  };
+
   const handleLogout = () => { localStorage.clear(); navigate('/'); };
 
   if (isLoading) return (
@@ -154,6 +184,7 @@ function AdminDashboard() {
     { key: 'withdrawals', label: '📤 Withdrawals', badge: pendingWithd },
     { key: 'investments', label: '📈 Investments' },
     { key: 'users',       label: '👥 Users' },
+    { key: 'settings',    label: '⚙️ Settings' },
   ];
 
   const thStyle = { padding: '14px 16px', color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)' };
@@ -226,6 +257,8 @@ function AdminDashboard() {
               </button>
             </div>
 
+            {/* Table-based tabs: Deposits, Withdrawals, Investments, Users */}
+            {activeTab !== 'settings' && (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 {/* ── DEPOSITS ── */}
@@ -394,7 +427,128 @@ function AdminDashboard() {
                 </>)}
               </table>
             </div>
-          </div>
+            )}
+
+            {/* ── SETTINGS TAB ── */}
+            {activeTab === 'settings' && (
+            <div style={{ padding: '25px' }}>
+              <h2 style={{ margin: '0 0 6px', fontSize: '1.3rem' }}>⚙️ Platform Settings</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '30px', fontSize: '0.88rem' }}>
+                Changes take effect immediately for all users — no server restart needed.<br />
+                To make changes permanent across restarts, update the corresponding environment variable in Render.
+              </p>
+
+              {/* Crypto Wallet Addresses */}
+              <section style={{ background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', padding: '24px', marginBottom: '20px' }}>
+                <h3 style={{ margin: '0 0 4px', fontSize: '1rem', color: '#f5a623' }}>🔑 Crypto Deposit Addresses</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '20px' }}>These are the addresses shown to users when they make a deposit. Set via <code style={{color:'#818cf8'}}>BTC_WALLET</code>, <code style={{color:'#818cf8'}}>ETH_WALLET</code>, <code style={{color:'#818cf8'}}>USDT_WALLET</code> env vars.</p>
+                {[
+                  { key: 'btc',  label: '₿ Bitcoin (BTC)',   placeholder: 'bc1q... or 1... or 3...',   envVar: 'BTC_WALLET'  },
+                  { key: 'eth',  label: '⬡ Ethereum (ETH)',  placeholder: '0x...',                     envVar: 'ETH_WALLET'  },
+                  { key: 'usdt', label: '₮ USDT (TRC20)',    placeholder: 'T...',                      envVar: 'USDT_WALLET' },
+                  { key: 'bank', label: '🏦 Bank Details',   placeholder: 'Account name, number, SWIFT…', envVar: 'BANK_DETAILS' },
+                ].map(({ key, label, placeholder, envVar }) => (
+                  <div key={key} style={{ marginBottom: '18px' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
+                      <span style={{ color: 'white', fontWeight: '600', fontSize: '0.88rem' }}>{label}</span>
+                      <code style={{ color: '#555', fontSize: '0.72rem' }}>env: {envVar}</code>
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        id={`setting-${key}`}
+                        type="text"
+                        value={settingsDraft[key] || ''}
+                        onChange={e => setSettingsDraft(prev => ({ ...prev, [key]: e.target.value }))}
+                        placeholder={placeholder}
+                        style={{ flex: 1, padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '0.88rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { navigator.clipboard.writeText(settingsDraft[key] || ''); addToast(`${label} address copied!`, 'info'); }}
+                        title="Copy to clipboard"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '8px', padding: '0 12px', cursor: 'pointer', fontSize: '1rem' }}
+                      >📋</button>
+                    </div>
+                    {settings && settings[key] !== settingsDraft[key] && (
+                      <p style={{ color: '#f59e0b', fontSize: '0.75rem', marginTop: '4px' }}>⚠️ Unsaved change</p>
+                    )}
+                  </div>
+                ))}
+              </section>
+
+              {/* General Settings */}
+              <section style={{ background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', padding: '24px', marginBottom: '20px' }}>
+                <h3 style={{ margin: '0 0 4px', fontSize: '1rem', color: '#00b0ff' }}>🌐 General Settings</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '20px' }}>Platform-wide configuration.</p>
+                {[
+                  { key: 'siteName',     label: 'Site Name',             type: 'text',   placeholder: 'Cashflowvest',      envVar: 'SITE_NAME'     },
+                  { key: 'supportEmail', label: 'Support Email',         type: 'email',  placeholder: 'support@example.com', envVar: 'SUPPORT_EMAIL' },
+                  { key: 'minDeposit',   label: 'Min Deposit (USD)',     type: 'number', placeholder: '200',               envVar: 'MIN_DEPOSIT'   },
+                  { key: 'minWithdraw',  label: 'Min Withdrawal (USD)',  type: 'number', placeholder: '50',                envVar: 'MIN_WITHDRAW'  },
+                ].map(({ key, label, type, placeholder, envVar }) => (
+                  <div key={key} style={{ marginBottom: '18px' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
+                      <span style={{ color: 'white', fontWeight: '600', fontSize: '0.88rem' }}>{label}</span>
+                      <code style={{ color: '#555', fontSize: '0.72rem' }}>env: {envVar}</code>
+                    </label>
+                    <input
+                      id={`setting-${key}`}
+                      type={type}
+                      value={settingsDraft[key] !== undefined ? settingsDraft[key] : ''}
+                      onChange={e => setSettingsDraft(prev => ({ ...prev, [key]: e.target.value }))}
+                      placeholder={placeholder}
+                      style={{ width: '100%', padding: '11px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'white', outline: 'none', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                    />
+                    {settings && String(settings[key]) !== String(settingsDraft[key]) && (
+                      <p style={{ color: '#f59e0b', fontSize: '0.75rem', marginTop: '4px' }}>⚠️ Unsaved change</p>
+                    )}
+                  </div>
+                ))}
+              </section>
+
+              {/* Env Var Reference */}
+              <section style={{ background: 'rgba(129,140,248,0.05)', borderRadius: '14px', border: '1px solid rgba(129,140,248,0.2)', padding: '20px', marginBottom: '25px' }}>
+                <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', color: '#818cf8' }}>📖 Environment Variable Reference</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '12px' }}>Set these in your Render dashboard under <strong style={{color:'white'}}>Environment → Environment Variables</strong> for permanent storage.</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px' }}>
+                  {[
+                    ['BTC_WALLET',    'Bitcoin deposit address'],
+                    ['ETH_WALLET',    'Ethereum deposit address'],
+                    ['USDT_WALLET',   'USDT (TRC20) deposit address'],
+                    ['BANK_DETAILS',  'Bank transfer instructions'],
+                    ['SITE_NAME',     'Platform display name'],
+                    ['SUPPORT_EMAIL', 'Admin / support email shown to users'],
+                    ['MIN_DEPOSIT',   'Minimum deposit in USD'],
+                    ['MIN_WITHDRAW',  'Minimum withdrawal in USD'],
+                  ].map(([name, desc]) => (
+                    <div key={name} style={{ background: 'var(--bg-main)', borderRadius: '8px', padding: '10px 14px' }}>
+                      <code style={{ color: '#818cf8', fontSize: '0.82rem', fontWeight: '700' }}>{name}</code>
+                      <p style={{ color: 'var(--text-secondary)', margin: '3px 0 0', fontSize: '0.78rem' }}>{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Save / Reset */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  id="save-settings-btn"
+                  onClick={handleSaveSettings}
+                  disabled={isSavingSettings}
+                  style={{ flex: 1, background: '#00e676', color: '#131722', fontWeight: '700', border: 'none', padding: '14px', borderRadius: '10px', cursor: isSavingSettings ? 'not-allowed' : 'pointer', fontSize: '1rem', opacity: isSavingSettings ? 0.7 : 1, transition: 'opacity 0.2s' }}
+                >
+                  {isSavingSettings ? '⏳ Saving…' : '💾 Save All Settings'}
+                </button>
+                <button
+                  onClick={() => { setSettingsDraft(settings || {}); addToast('Changes discarded', 'info'); }}
+                  style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '14px 22px', borderRadius: '10px', cursor: 'pointer', fontSize: '1rem' }}
+                >
+                  ↩ Reset
+                </button>
+              </div>
+            </div>
+            )}
+          </div>{/* /Content Card */}
         </main>
       </div>
 

@@ -11,9 +11,36 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
-        sync: false # You will be prompted to enter this in the Render Dashboard
+        sync: false   # Set in Render Dashboard → Environment
       - key: JWT_SECRET
         generateValue: true
+      # ── Payment / Wallet Settings ───────────────────────────────────────────
+      # Admin can also update these live from the Admin Panel → ⚙️ Settings tab
+      # without restarting the server. Set them here for persistence on redeploy.
+      - key: BTC_WALLET
+        sync: false   # Your Bitcoin deposit address
+      - key: ETH_WALLET
+        sync: false   # Your Ethereum deposit address
+      - key: USDT_WALLET
+        sync: false   # Your USDT (TRC20) deposit address
+      - key: BANK_DETAILS
+        sync: false   # Bank transfer instructions (optional)
+      # ── Platform Config ─────────────────────────────────────────────────────
+      - key: SITE_NAME
+        value: Cashflowvest
+      - key: SUPPORT_EMAIL
+        sync: false   # Admin/support email shown to users
+      - key: MIN_DEPOSIT
+        value: "200"  # Minimum deposit in USD
+      - key: MIN_WITHDRAW
+        value: "50"   # Minimum withdrawal in USD
+      # ── Email ───────────────────────────────────────────────────────────────
+      - key: EMAIL_USER
+        sync: false   # Gmail address used to send emails
+      - key: EMAIL_PASS
+        sync: false   # Gmail App Password
+      - key: FRONTEND_URL
+        sync: false   # e.g. https://cashflowvest.onrender.com
 
   # Frontend Static Site
   - type: web

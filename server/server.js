@@ -36,13 +36,22 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// ─── WALLET ADDRESSES (Feature 4) ───────────────────────────────────────────
-const WALLET_ADDRESSES = {
-    btc:  process.env.BTC_WALLET  || '1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf6o',
-    eth:  process.env.ETH_WALLET  || '0x742d35Cc6634C0532925a3b8D4C9B7A5e7F7a8D',
-    usdt: process.env.USDT_WALLET || 'TRx8QjNfP2v3KY5zN9LpD4hW6mR1bEqVAk',
-    bank: 'Contact support for bank transfer details'
+// ─── PLATFORM SETTINGS (mutable at runtime by admin) ────────────────────────
+// Initial values come from environment variables. Admin can update them live
+// via the /api/admin/settings endpoints without restarting the server.
+const platformSettings = {
+    btc:          process.env.BTC_WALLET   || '',
+    eth:          process.env.ETH_WALLET   || '',
+    usdt:         process.env.USDT_WALLET  || '',
+    bank:         process.env.BANK_DETAILS || '',
+    siteName:     process.env.SITE_NAME    || 'Cashflowvest',
+    minDeposit:   Number(process.env.MIN_DEPOSIT)  || 200,
+    minWithdraw:  Number(process.env.MIN_WITHDRAW) || 50,
+    supportEmail: process.env.SUPPORT_EMAIL || process.env.EMAIL_USER || '',
 };
+
+// Keep backward-compat alias used by /api/wallet-addresses
+const WALLET_ADDRESSES = platformSettings;
 
 // ─── MODELS ──────────────────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
@@ -303,6 +312,33 @@ const verifyAdmin = (req, res, next) => {
 // ─── FEATURE 4: Wallet Addresses ─────────────────────────────────────────────
 app.get('/api/wallet-addresses', verifyToken, (req, res) => {
     res.json(WALLET_ADDRESSES);
+});
+
+// ─── ADMIN: Get Platform Settings ────────────────────────────────────────────
+app.get('/api/admin/settings', verifyAdmin, (req, res) => {
+    res.json(platformSettings);
+});
+
+// ─── ADMIN: Update Platform Settings ─────────────────────────────────────────
+app.put('/api/admin/settings', verifyAdmin, (req, res) => {
+    const allowed = ['btc', 'eth', 'usdt', 'bank', 'siteName', 'minDeposit', 'minWithdraw', 'supportEmail'];
+    const updates = {};
+
+    for (const key of allowed) {
+        if (req.body[key] !== undefined) {
+            platformSettings[key] = key === 'minDeposit' || key === 'minWithdraw'
+                ? Number(req.body[key])
+                : String(req.body[key]).trim();
+            updates[key] = platformSettings[key];
+        }
+    }
+
+    if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: 'No valid fields provided.' });
+    }
+
+    console.log('[Admin Settings Updated]', updates);
+    res.json({ message: 'Settings updated successfully.', settings: platformSettings });
 });
 
 // ─── USER DASHBOARD ───────────────────────────────────────────────────────────
