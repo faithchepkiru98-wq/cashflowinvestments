@@ -556,8 +556,8 @@ function Dashboard() {
           {activeTab === 'transactions' && (
             <div>
               <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Transaction History</h2>
-              <div style={{ background: 'var(--bg-main)', borderRadius: '8px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <div style={{ background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '500px' }}>
                   <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
                     <tr>
                       <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Date</th>
