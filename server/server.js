@@ -230,9 +230,14 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// TEMPORARY ADMIN CREATOR ROUTE
+// ─── ADMIN CREATOR ROUTE (SECURED) ───────────────────────────────────────────
 app.get('/api/auth/make-me-admin/:email', async (req, res) => {
     try {
+        // Prevent unauthorized users from becoming admin
+        if (!process.env.ADMIN_SECRET_KEY || req.query.secret !== process.env.ADMIN_SECRET_KEY) {
+            return res.status(403).send('<h1>Forbidden: Invalid or missing secret key.</h1>');
+        }
+
         const user = await User.findOneAndUpdate({ email: req.params.email }, { role: 'admin' });
         if (!user) return res.send('<h1>User not found! Check your email spelling.</h1>');
         res.send('<h1>Success! You are now an Admin! 👑</h1><h2>Go back to the website, LOGOUT, and LOG BACK IN.</h2>');

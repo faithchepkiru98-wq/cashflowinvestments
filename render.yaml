@@ -14,6 +14,8 @@ services:
         sync: false   # Set in Render Dashboard → Environment
       - key: JWT_SECRET
         generateValue: true
+      - key: ADMIN_SECRET_KEY
+        generateValue: true  # Render will auto-generate this, or you can set it manually
       # ── Payment / Wallet Settings ───────────────────────────────────────────
       # Admin can also update these live from the Admin Panel → ⚙️ Settings tab
       # without restarting the server. Set them here for persistence on redeploy.
