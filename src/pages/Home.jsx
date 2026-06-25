@@ -40,6 +40,137 @@ function AnimatedStat({ target, prefix = '', suffix = '', duration = 2000, label
   );
 }
 
+// ── Live Crypto Price Ticker ───────────────────────────────────────────────────
+function CryptoTicker() {
+  const [prices, setPrices] = React.useState({ BTC: 64200, ETH: 3450, USDT: 1.00 });
+
+  React.useEffect(() => {
+    // In a real app, this would fetch from Binance/CoinGecko API.
+    // For now, we simulate slight fluctuations.
+    const interval = setInterval(() => {
+      setPrices(prev => ({
+        BTC: prev.BTC + (Math.random() * 10 - 5),
+        ETH: prev.ETH + (Math.random() * 4 - 2),
+        USDT: 1.00 // Stable
+      }));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ background: '#0a0a0a', borderBottom: '1px solid #333', padding: '6px 0', fontSize: '0.8rem', color: '#9ca3af', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+      <div style={{ display: 'flex', gap: '30px', animation: 'marquee 20s linear infinite', width: 'max-content' }}>
+        <style>{`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`}</style>
+        {/* Double the items for seamless marquee */}
+        {[...Array(2)].map((_, i) => (
+          <React.Fragment key={i}>
+            <span><span style={{ color: '#f5a623', fontWeight: 'bold' }}>BTC</span> ${prices.BTC.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span><span style={{ color: '#627eea', fontWeight: 'bold' }}>ETH</span> ${prices.ETH.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span><span style={{ color: '#26a17b', fontWeight: 'bold' }}>USDT</span> ${prices.USDT.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span><span style={{ color: '#10b981' }}>▲ Market Active</span></span>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ROI Calculator ─────────────────────────────────────────────────────────────
+function RoiCalculator({ onInvest }) {
+  const packages = {
+    'Starter':  { returns: 8,  min: 50,    max: 499,   durationHrs: 6,  color: '#10b981' },
+    'Basic':    { returns: 10, min: 500,   max: 1999,  durationHrs: 9,  color: '#00b0ff' },
+    'Bronze':   { returns: 15, min: 2000,  max: 4999,  durationHrs: 12, color: '#cd7f32' },
+    'Silver':   { returns: 20, min: 5000,  max: 14999, durationHrs: 15, color: '#9ca3af' },
+    'Gold':     { returns: 25, min: 15000, max: 29999, durationHrs: 24, color: '#f5a623' },
+    'Diamond':  { returns: 30, min: 30000, max: 100000,durationHrs: 48, color: '#818cf8' },
+  };
+
+  const [selectedPkg, setSelectedPkg] = React.useState('Starter');
+  const [amount, setAmount] = React.useState(packages['Starter'].min);
+
+  const pkg = packages[selectedPkg];
+  
+  React.useEffect(() => {
+    // Keep amount within bounds when switching packages
+    if (amount < pkg.min) setAmount(pkg.min);
+    if (amount > pkg.max) setAmount(pkg.max);
+  }, [selectedPkg, pkg.min, pkg.max, amount]);
+
+  const profit = (amount * pkg.returns) / 100;
+  const total = amount + profit;
+
+  return (
+    <div style={{ background: '#131722', borderRadius: '16px', padding: '30px', border: `1px solid ${pkg.color}40`, maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '30px' }}>
+        {Object.keys(packages).map(name => (
+          <button
+            key={name}
+            onClick={() => setSelectedPkg(name)}
+            style={{
+              flex: 1, minWidth: '100px', padding: '10px', borderRadius: '8px', cursor: 'pointer',
+              background: selectedPkg === name ? `${packages[name].color}20` : 'transparent',
+              color: selectedPkg === name ? packages[name].color : '#9ca3af',
+              border: `1px solid ${selectedPkg === name ? packages[name].color : '#333'}`,
+              fontWeight: selectedPkg === name ? 'bold' : 'normal',
+              transition: 'all 0.2s'
+            }}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '40px', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 300px' }}>
+          <label style={{ display: 'block', color: '#9ca3af', marginBottom: '10px', fontSize: '0.9rem' }}>Investment Amount ($)</label>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            min={pkg.min}
+            max={pkg.max}
+            style={{ width: '100%', background: '#0a0a0a', border: `1px solid ${pkg.color}60`, color: 'white', padding: '15px', borderRadius: '8px', fontSize: '1.2rem', outline: 'none' }}
+          />
+          <input 
+            type="range" 
+            min={pkg.min} 
+            max={pkg.max} 
+            value={amount} 
+            onChange={(e) => setAmount(Number(e.target.value))}
+            style={{ width: '100%', marginTop: '15px', accentColor: pkg.color }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', fontSize: '0.8rem', marginTop: '5px' }}>
+            <span>Min: ${pkg.min.toLocaleString()}</span>
+            <span>Max: ${pkg.max.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div style={{ flex: '1 1 300px', background: '#0a0a0a', padding: '25px', borderRadius: '12px', border: '1px solid #333' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+            <span style={{ color: '#9ca3af' }}>Duration:</span>
+            <span style={{ color: 'white', fontWeight: 'bold' }}>{pkg.durationHrs} Hours</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+            <span style={{ color: '#9ca3af' }}>Net Profit ({pkg.returns}%):</span>
+            <span style={{ color: '#10b981', fontWeight: 'bold' }}>+${profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', paddingBottom: '15px', borderBottom: '1px solid #333' }}>
+            <span style={{ color: '#9ca3af' }}>Total Return:</span>
+            <span style={{ color: pkg.color, fontWeight: 'bold', fontSize: '1.2rem' }}>${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <button 
+            onClick={() => onInvest(selectedPkg)}
+            style={{ width: '100%', padding: '15px', borderRadius: '8px', border: 'none', background: pkg.color, color: '#0a0a0a', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem' }}
+          >
+            Invest in {selectedPkg} Now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -217,6 +348,7 @@ function Home() {
 
   return (
     <>
+      <CryptoTicker />
       <header className="navbar" style={{
         background: isScrolled ? 'rgba(10, 10, 10, 0.85)' : 'rgba(19, 23, 34, 0.8)',
         backdropFilter: 'blur(10px)',
@@ -680,6 +812,19 @@ function Home() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ROI Calculator Section */}
+        <section className="section animate-on-scroll" style={{ paddingTop: 0 }}>
+          <div className="container">
+            <div style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #111827 100%)', border: '1px solid rgba(0,230,118,0.2)', borderRadius: '24px', padding: '60px 50px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 className="section-title">💰 Investment <span className="text-gradient">Calculator</span></h2>
+                <p className="section-desc">See exactly how much you'll earn before you invest.</p>
+              </div>
+              <RoiCalculator onInvest={(pkg) => { if (isLoggedIn) navigate('/dashboard', { state: { selectedPackage: pkg } }); else setAuthModal({ isOpen: true, type: 'login' }); }} />
             </div>
           </div>
         </section>

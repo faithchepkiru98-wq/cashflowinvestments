@@ -68,9 +68,31 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpiry: { type: Date },
     referralCode:        { type: String, unique: true, sparse: true },
     referredBy:          { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    referralBonusPaid:   { type: Boolean, default: false },
+    kycStatus:           { type: String, default: 'none' }, // none, pending, approved, rejected
+    kycDocument:         { type: String }, // URL or base64 of ID doc
     createdAt:           { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
+
+// ─── NOTIFICATION MODEL ───────────────────────────────────────────────────────
+const notificationSchema = new mongoose.Schema({
+    userId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    message:   { type: String, required: true },
+    type:      { type: String, default: 'info' }, // info, success, warning, error
+    read:      { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now }
+});
+const Notification = mongoose.model('Notification', notificationSchema);
+
+// ─── BROADCAST MODEL ─────────────────────────────────────────────────────────
+const broadcastSchema = new mongoose.Schema({
+    title:     { type: String, required: true },
+    message:   { type: String, required: true },
+    type:      { type: String, default: 'info' }, // info, success, warning
+    createdAt: { type: Date, default: Date.now }
+});
+const Broadcast = mongoose.model('Broadcast', broadcastSchema);
 
 // Investment packages durations (in hours)
 const PACKAGE_DURATIONS = {
@@ -116,6 +138,10 @@ mongoose.connect(MONGODB_URI)
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
+
+const notify = async (userId, message, type = 'info') => {
+    try { await new Notification({ userId, message, type }).save(); } catch {}
+};
 
 const sendEmail = async (to, subject, html) => {
     try {
@@ -447,13 +473,14 @@ app.get('/api/admin/dashboard', verifyAdmin, async (req, res) => {
 
 app.put('/api/admin/transaction/:id/approve', verifyAdmin, async (req, res) => {
     try {
-        const transaction = await Transaction.findById(req.params.id);
+        const transaction = await Transaction.findById(req.params.id).populate('userId');
         if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
 
         transaction.status = 'completed';
         await transaction.save();
 
-        // If it's a deposit, activate the linked investment and credit balance
+        const txUser = await User.findById(transaction.userId);
+
         if (transaction.type === 'deposit' && transaction.investmentId) {
             const investment = await Investment.findById(transaction.investmentId);
             if (investment) {
@@ -461,10 +488,41 @@ app.put('/api/admin/transaction/:id/approve', verifyAdmin, async (req, res) => {
                 await investment.save();
             }
             await User.findByIdAndUpdate(transaction.userId, { $inc: { balance: transaction.amount } });
+
+            // ── Referral reward ──────────────────────────────────────────────
+            if (txUser && txUser.referredBy && !txUser.referralBonusPaid) {
+                const referralBonus = 10; // $10 referral reward
+                await User.findByIdAndUpdate(txUser.referredBy, { $inc: { balance: referralBonus } });
+                await User.findByIdAndUpdate(txUser._id, { referralBonusPaid: true });
+                await notify(txUser.referredBy, `🎉 You earned a $${referralBonus} referral bonus! Your referral made their first deposit.`, 'success');
+            }
+
+            // ── Notify user ──────────────────────────────────────────────────
+            if (txUser) {
+                await notify(txUser._id, `✅ Your deposit of $${transaction.amount} has been approved and credited to your account.`, 'success');
+                sendEmail(txUser.email, 'Deposit Approved - Cashflowvest', `
+                    <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
+                      <h1 style="color:#00e676;">Deposit Approved ✅</h1>
+                      <p>Your deposit of <strong>$${transaction.amount}</strong> has been approved. Your investment is now active!</p>
+                      <p style="color:#9ca3af;">Login to your dashboard to track your live earnings.</p>
+                    </div>`);
+            }
+        }
+
+        if (transaction.type === 'withdrawal') {
+            if (txUser) {
+                await notify(txUser._id, `💸 Your withdrawal of $${transaction.amount} has been approved and is being processed.`, 'success');
+                sendEmail(txUser.email, 'Withdrawal Approved - Cashflowvest', `
+                    <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
+                      <h1 style="color:#00e676;">Withdrawal Approved 💸</h1>
+                      <p>Your withdrawal request of <strong>$${transaction.amount}</strong> has been approved. Funds are being sent to your wallet.</p>
+                    </div>`);
+            }
         }
 
         res.json({ message: 'Transaction approved successfully', transaction });
-    } catch {
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -477,9 +535,23 @@ app.put('/api/admin/transaction/:id/reject', verifyAdmin, async (req, res) => {
         transaction.status = 'rejected';
         await transaction.save();
 
-        // If it's a rejected withdrawal, refund the balance
+        const txUser = await User.findById(transaction.userId);
+
         if (transaction.type === 'withdrawal') {
             await User.findByIdAndUpdate(transaction.userId, { $inc: { balance: transaction.amount } });
+        }
+
+        if (txUser) {
+            const msg = transaction.type === 'deposit'
+                ? `❌ Your deposit of $${transaction.amount} was rejected. Please contact support.`
+                : `❌ Your withdrawal of $${transaction.amount} was rejected and refunded to your balance.`;
+            await notify(txUser._id, msg, 'error');
+            sendEmail(txUser.email, 'Transaction Update - Cashflowvest', `
+                <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
+                  <h1 style="color:#ef4444;">Transaction Rejected ❌</h1>
+                  <p>${msg}</p>
+                  <p style="color:#9ca3af;">If you believe this is a mistake, please contact our support team.</p>
+                </div>`);
         }
 
         res.json({ message: 'Transaction rejected', transaction });
@@ -511,6 +583,69 @@ app.put('/api/admin/user/:id/role', verifyAdmin, async (req, res) => {
     } catch {
         res.status(500).json({ message: 'Server error' });
     }
+});
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+app.get('/api/notifications', verifyToken, async (req, res) => {
+    try {
+        const notifs = await Notification.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(30);
+        res.json(notifs);
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.put('/api/notifications/read-all', verifyToken, async (req, res) => {
+    try {
+        await Notification.updateMany({ userId: req.user.id, read: false }, { read: true });
+        res.json({ message: 'All marked as read' });
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+// ─── ADMIN BROADCAST ─────────────────────────────────────────────────────────
+app.get('/api/broadcasts', verifyToken, async (req, res) => {
+    try {
+        const broadcasts = await Broadcast.find().sort({ createdAt: -1 }).limit(5);
+        res.json(broadcasts);
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.post('/api/admin/broadcast', verifyAdmin, async (req, res) => {
+    try {
+        const { title, message, type } = req.body;
+        if (!title || !message) return res.status(400).json({ message: 'Title and message required' });
+        const broadcast = new Broadcast({ title, message, type: type || 'info' });
+        await broadcast.save();
+        res.status(201).json({ message: 'Broadcast sent to all users', broadcast });
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.delete('/api/admin/broadcast/:id', verifyAdmin, async (req, res) => {
+    try {
+        await Broadcast.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Broadcast deleted' });
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+// ─── KYC ─────────────────────────────────────────────────────────────────────
+app.post('/api/user/kyc', verifyToken, async (req, res) => {
+    try {
+        const { document } = req.body; // base64 or URL string
+        if (!document) return res.status(400).json({ message: 'Document required' });
+        await User.findByIdAndUpdate(req.user.id, { kycStatus: 'pending', kycDocument: document });
+        res.json({ message: 'KYC submitted for review' });
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.put('/api/admin/user/:id/kyc', verifyAdmin, async (req, res) => {
+    try {
+        const { status } = req.body; // 'approved' or 'rejected'
+        if (!['approved', 'rejected'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
+        const user = await User.findByIdAndUpdate(req.params.id, { kycStatus: status }, { new: true });
+        const msg = status === 'approved'
+            ? '✅ Your KYC verification has been approved! You can now make large withdrawals.'
+            : '❌ Your KYC verification was rejected. Please resubmit with a clearer document.';
+        await notify(user._id, msg, status === 'approved' ? 'success' : 'error');
+        res.json({ message: `KYC ${status}`, user });
+    } catch { res.status(500).json({ message: 'Server error' }); }
 });
 
 const PORT = process.env.PORT || 5000;

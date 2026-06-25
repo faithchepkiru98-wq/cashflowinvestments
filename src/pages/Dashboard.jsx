@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, Wallet, ArrowDownCircle, List, LogOut, Crown } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Wallet, ArrowDownCircle, List, LogOut, Bell, ShieldCheck, X } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function calcLiveEarnings(inv) {
@@ -162,6 +163,11 @@ function Dashboard() {
   const [contactInfo, setContactInfo] = useState('');
   const [copied, setCopied] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [broadcasts, setBroadcasts] = useState([]);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [kycFile, setKycFile] = useState(null);
+  const [kycSubmitting, setKycSubmitting] = useState(false);
 
   const addToast = (message, type = 'success') => {
     const id = Date.now();
@@ -209,18 +215,46 @@ function Dashboard() {
         const data = await response.json();
         setDashboardData(data);
       }
-      
       const walletRes = await fetch(`${API_URL}/api/wallet-addresses`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (walletRes.ok) {
-        setWalletAddresses(await walletRes.json());
-      }
+      if (walletRes.ok) setWalletAddresses(await walletRes.json());
+
+      // Fetch notifications & broadcasts
+      const nRes = await fetch(`${API_URL}/api/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (nRes.ok) setNotifications(await nRes.json());
+      const bRes = await fetch(`${API_URL}/api/broadcasts`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (bRes.ok) setBroadcasts(await bRes.json());
     } catch (error) {
       console.error('Failed to fetch dashboard data', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const markNotifsRead = async () => {
+    const token = localStorage.getItem('token');
+    await fetch(`${API_URL}/api/notifications/read-all`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const submitKyc = async () => {
+    if (!kycFile) return;
+    setKycSubmitting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/user/kyc`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document: e.target.result })
+      });
+      const data = await res.json();
+      addToast(data.message, res.ok ? 'success' : 'error');
+      if (res.ok) fetchDashboardData(token);
+      setKycSubmitting(false);
+    };
+    reader.readAsDataURL(kycFile);
   };
 
   const handleLogout = () => {
@@ -332,14 +366,45 @@ function Dashboard() {
             <div className="logo-icon"></div>
             <span>Cashflowvest Dashboard</span>
           </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-             {user?.role === 'admin' && (
-               <Link to="/admin" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.9rem', background: '#f5a623', color: '#000', border: 'none' }}>
-                 👑 Admin Panel
-               </Link>
-             )}
-             <span style={{ color: 'var(--text-secondary)' }}>Welcome, <span style={{ color: 'white' }}>{user.name || user.email.split('@')[0]}</span></span>
-             <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>Logout</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {user?.role === 'admin' && (
+              <Link to="/admin" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.9rem', background: '#f5a623', color: '#000', border: 'none' }}>
+                👑 Admin Panel
+              </Link>
+            )}
+            {/* Notification Bell */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => { setShowNotifs(v => !v); if (!showNotifs) markNotifsRead(); }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', position: 'relative', padding: '6px' }}
+              >
+                <Bell size={22} />
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span style={{ position: 'absolute', top: '2px', right: '2px', background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '0.65rem', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                    {notifications.filter(n => !n.read).length}
+                  </span>
+                )}
+              </button>
+              {showNotifs && (
+                <div style={{ position: 'absolute', right: 0, top: '110%', width: '320px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', zIndex: 500, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>Notifications</span>
+                    <button onClick={() => setShowNotifs(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><X size={16} /></button>
+                  </div>
+                  <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                    {notifications.length === 0 ? (
+                      <p style={{ color: 'var(--text-secondary)', padding: '20px', textAlign: 'center', fontSize: '0.9rem' }}>No notifications yet.</p>
+                    ) : notifications.map(n => (
+                      <div key={n._id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', background: n.read ? 'transparent' : 'rgba(0,230,118,0.04)' }}>
+                        <p style={{ fontSize: '0.85rem', color: n.type === 'error' ? '#ef4444' : n.type === 'success' ? '#00e676' : 'var(--text-primary)', margin: 0 }}>{n.message}</p>
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px' }}>{new Date(n.createdAt).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <span style={{ color: 'var(--text-secondary)' }}>Welcome, <span style={{ color: 'white' }}>{user.name || user.email?.split('@')[0]}</span></span>
           </div>
         </div>
       </header>
@@ -392,7 +457,25 @@ function Dashboard() {
           {activeTab === 'overview' && (
             <div>
               <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Account Overview</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px' }}>
+
+              {/* Broadcast Banners */}
+              {broadcasts.map(b => (
+                <div key={b._id} style={{
+                  background: b.type === 'success' ? 'rgba(0,230,118,0.08)' : b.type === 'warning' ? 'rgba(245,166,35,0.08)' : 'rgba(0,176,255,0.08)',
+                  border: `1px solid ${b.type === 'success' ? '#00e676' : b.type === 'warning' ? '#f5a623' : '#00b0ff'}40`,
+                  borderRadius: '10px', padding: '14px 18px', marginBottom: '16px',
+                  display: 'flex', gap: '12px', alignItems: 'flex-start'
+                }}>
+                  <span style={{ fontSize: '1.2rem' }}>{b.type === 'success' ? '✅' : b.type === 'warning' ? '⚠️' : '📢'}</span>
+                  <div>
+                    <p style={{ fontWeight: '600', marginBottom: '2px', fontSize: '0.95rem' }}>{b.title}</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>{b.message}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Stat Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
                 <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                   <LiveBalance baseBalance={dashboardData.user?.balance} investments={dashboardData.investments || []} />
                 </div>
@@ -405,6 +488,71 @@ function Dashboard() {
                   <h3 style={{ fontSize: '2rem', color: '#10b981' }}>${dashboardData.user?.profit?.toLocaleString() || '0.00'}</h3>
                 </div>
               </div>
+
+              {/* Portfolio Chart */}
+              {dashboardData.transactions?.length > 0 && (() => {
+                const chartData = dashboardData.transactions
+                  .filter(tx => tx.status === 'completed')
+                  .slice().reverse()
+                  .reduce((acc, tx) => {
+                    const last = acc.length > 0 ? acc[acc.length - 1].balance : 0;
+                    const delta = tx.type === 'deposit' ? tx.amount : -tx.amount;
+                    acc.push({ date: new Date(tx.createdAt).toLocaleDateString(), balance: Math.max(0, last + delta) });
+                    return acc;
+                  }, []);
+                return chartData.length > 1 ? (
+                  <div style={{ background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '20px', marginBottom: '30px' }}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Portfolio Growth</p>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#00e676" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#00e676" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                        <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => `$${v}`} />
+                        <Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }} formatter={v => [`$${v}`, 'Balance']} />
+                        <Area type="monotone" dataKey="balance" stroke="#00e676" strokeWidth={2} fill="url(#balGrad)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : null;
+              })()}
+
+              {/* KYC Card */}
+              {(() => {
+                const kycStatus = dashboardData.user?.kycStatus || 'none';
+                const kycColor = { none: '#9ca3af', pending: '#f5a623', approved: '#00e676', rejected: '#ef4444' }[kycStatus];
+                return (
+                  <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: `1px solid ${kycColor}40`, marginBottom: '30px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <ShieldCheck size={28} color={kycColor} />
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '1rem' }}>KYC Verification</h3>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: kycColor, fontWeight: '600', textTransform: 'capitalize' }}>{kycStatus === 'none' ? 'Not submitted' : kycStatus}</p>
+                        </div>
+                      </div>
+                      {(kycStatus === 'none' || kycStatus === 'rejected') && (
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <input type="file" accept="image/*,.pdf" id="kyc-file" style={{ display: 'none' }} onChange={e => setKycFile(e.target.files[0])} />
+                          <label htmlFor="kyc-file" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                            {kycFile ? kycFile.name : '📎 Select ID Document'}
+                          </label>
+                          {kycFile && (
+                            <button onClick={submitKyc} disabled={kycSubmitting} style={{ background: '#00e676', color: '#131722', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem' }}>
+                              {kycSubmitting ? 'Submitting...' : 'Submit for Verification'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
               
               {/* Referral Section */}
               <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>

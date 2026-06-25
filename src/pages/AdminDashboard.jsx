@@ -66,6 +66,8 @@ function AdminDashboard() {
   const [settings, setSettings]   = useState(null);
   const [settingsDraft, setSettingsDraft] = useState({});
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [broadcasts, setBroadcasts] = useState([]);
+  const [newBroadcast, setNewBroadcast] = useState({ title: '', message: '', type: 'info' });
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -79,9 +81,10 @@ function AdminDashboard() {
 
   const fetchAdminData = useCallback(async (token) => {
     try {
-      const [dataRes, settingsRes] = await Promise.all([
+      const [dataRes, settingsRes, broadcastRes] = await Promise.all([
         fetch(`${API_URL}/api/admin/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch(`${API_URL}/api/admin/settings`,  { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/broadcasts`,      { headers: { 'Authorization': `Bearer ${token}` } }),
       ]);
       if (dataRes.ok) setAdminData(await dataRes.json());
       else if (dataRes.status === 403) { addToast('Admin access required', 'error'); navigate('/'); }
@@ -90,6 +93,7 @@ function AdminDashboard() {
         setSettings(s);
         setSettingsDraft(s);
       }
+      if (broadcastRes.ok) setBroadcasts(await broadcastRes.json());
     } catch { addToast('Failed to load admin data', 'error'); }
     finally { setIsLoading(false); }
   }, [API_URL, navigate]);
@@ -145,6 +149,42 @@ function AdminDashboard() {
     } catch { addToast('Network error', 'error'); }
   };
 
+  const handleUpdateKyc = async (userId, status) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/user/${userId}/kyc`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) { addToast(`KYC ${status}`, 'success'); fetchAdminData(token); }
+      else addToast('Failed to update KYC', 'error');
+    } catch { addToast('Network error', 'error'); }
+  };
+
+  const handleAddBroadcast = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(newBroadcast)
+      });
+      if (res.ok) { addToast('Broadcast sent!', 'success'); setNewBroadcast({ title: '', message: '', type: 'info' }); fetchAdminData(token); }
+      else addToast('Failed to send broadcast', 'error');
+    } catch { addToast('Network error', 'error'); }
+  };
+
+  const handleDeleteBroadcast = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/broadcast/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) { addToast('Broadcast deleted', 'success'); fetchAdminData(token); }
+      else addToast('Failed to delete broadcast', 'error');
+    } catch { addToast('Network error', 'error'); }
+  };
+
   const handleSaveSettings = async () => {
     const token = localStorage.getItem('token');
     setIsSavingSettings(true);
@@ -184,6 +224,7 @@ function AdminDashboard() {
     { key: 'withdrawals', label: '📤 Withdrawals', badge: pendingWithd },
     { key: 'investments', label: '📈 Investments' },
     { key: 'users',       label: '👥 Users' },
+    { key: 'broadcasts',  label: '📢 Broadcasts' },
     { key: 'settings',    label: '⚙️ Settings' },
   ];
 
@@ -386,17 +427,18 @@ function AdminDashboard() {
                 {/* ── USERS ── */}
                 {activeTab === 'users' && (<>
                   <thead><tr>
-                    <th style={thStyle}>Name</th>
-                    <th style={thStyle}>Email</th>
-                    <th style={thStyle}>Phone</th>
-                    <th style={thStyle}>Balance</th>
-                    <th style={thStyle}>Role</th>
-                    <th style={thStyle}>Joined</th>
-                    <th style={thStyle}>Actions</th>
+                    <th style={{...thStyle, width: '15%'}}>Name</th>
+                    <th style={{...thStyle, width: '20%'}}>Email</th>
+                    <th style={{...thStyle, width: '15%'}}>Phone</th>
+                    <th style={{...thStyle, width: '10%'}}>Balance</th>
+                    <th style={{...thStyle, width: '10%'}}>Role</th>
+                    <th style={{...thStyle, width: '10%'}}>KYC</th>
+                    <th style={{...thStyle, width: '10%'}}>Joined</th>
+                    <th style={{...thStyle, width: '10%'}}>Actions</th>
                   </tr></thead>
                   <tbody>
                     {adminData.users.length === 0 ? (
-                      <tr><td colSpan="7" style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>No users yet.</td></tr>
+                      <tr><td colSpan="8" style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>No users yet.</td></tr>
                     ) : adminData.users.map(u => (
                       <tr key={u._id}>
                         <td style={{ ...tdStyle, fontWeight: '500', color: 'white' }}>{u.name || '—'}</td>
@@ -404,6 +446,11 @@ function AdminDashboard() {
                         <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{u.phone || '—'}</td>
                         <td style={{ ...tdStyle, color: '#00e676', fontWeight: '600' }}>${(u.balance || 0).toLocaleString()}</td>
                         <td style={tdStyle}><Badge status={u.role} /></td>
+                        <td style={tdStyle}>
+                          <span style={{ color: u.kycStatus === 'approved' ? '#00e676' : u.kycStatus === 'pending' ? '#f5a623' : u.kycStatus === 'rejected' ? '#ef4444' : '#9ca3af', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                            {u.kycStatus || 'none'}
+                          </span>
+                        </td>
                         <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
                         <td style={tdStyle}>
                           <div style={{display:'flex', gap:'5px', flexWrap:'wrap'}}>
@@ -419,6 +466,21 @@ function AdminDashboard() {
                                 ⬇️ Revoke Admin
                               </button>
                             )}
+                            {u.kycStatus === 'pending' && (
+                              <>
+                                {u.kycDocument && (
+                                  <a href={u.kycDocument} target="_blank" rel="noreferrer" style={{ background: 'rgba(0,176,255,0.15)', color: '#00b0ff', border: '1px solid #00b0ff', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap', textDecoration: 'none' }}>
+                                    📄 View ID
+                                  </a>
+                                )}
+                                <button onClick={() => handleUpdateKyc(u._id, 'approved')} style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid #10b981', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                  ✅ Approve KYC
+                                </button>
+                                <button onClick={() => handleUpdateKyc(u._id, 'rejected')} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid #ef4444', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                  ❌ Reject KYC
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -426,6 +488,39 @@ function AdminDashboard() {
                   </tbody>
                 </>)}
               </table>
+            </div>
+            )}
+
+            {/* ── BROADCASTS TAB ── */}
+            {activeTab === 'broadcasts' && (
+            <div style={{ padding: '25px' }}>
+              <h2 style={{ margin: '0 0 20px', fontSize: '1.3rem' }}>📢 Send Broadcast</h2>
+              <form onSubmit={handleAddBroadcast} style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '30px' }}>
+                <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+                  <input type="text" placeholder="Broadcast Title" required value={newBroadcast.title} onChange={e => setNewBroadcast({...newBroadcast, title: e.target.value})} style={{ flex: 2, padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'white' }} />
+                  <select value={newBroadcast.type} onChange={e => setNewBroadcast({...newBroadcast, type: e.target.value})} style={{ flex: 1, padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'white' }}>
+                    <option value="info">Info</option>
+                    <option value="success">Success</option>
+                    <option value="warning">Warning</option>
+                  </select>
+                </div>
+                <textarea placeholder="Broadcast Message..." required value={newBroadcast.message} onChange={e => setNewBroadcast({...newBroadcast, message: e.target.value})} style={{ width: '100%', height: '80px', padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'white', marginBottom: '15px', resize: 'none' }} />
+                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Send Broadcast to All Users</button>
+              </form>
+
+              <h2 style={{ margin: '0 0 20px', fontSize: '1.3rem' }}>Recent Broadcasts</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {broadcasts.map(b => (
+                  <div key={b._id} style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h3 style={{ margin: '0 0 5px', fontSize: '1.1rem', color: b.type === 'success' ? '#00e676' : b.type === 'warning' ? '#f5a623' : '#00b0ff' }}>{b.title}</h3>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{b.message}</p>
+                    </div>
+                    <button onClick={() => handleDeleteBroadcast(b._id)} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid #ef4444', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}>Delete</button>
+                  </div>
+                ))}
+                {broadcasts.length === 0 && <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>No recent broadcasts.</p>}
+              </div>
             </div>
             )}
 
