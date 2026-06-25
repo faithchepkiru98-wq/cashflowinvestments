@@ -3,6 +3,42 @@ import { useNavigate } from 'react-router-dom';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { ShieldCheck, TrendingUp, Zap, Users, BarChart3, Globe } from 'lucide-react';
+import { useRef } from 'react';
+
+// ── Animated Stat Counter ─────────────────────────────────────────────────────────────
+function AnimatedStat({ target, prefix = '', suffix = '', duration = 2000, label }) {
+  const [count, setCount] = React.useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        const start = performance.now();
+        const step = (now) => {
+          const elapsed = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - elapsed, 3); // cubic ease-out
+          setCount(Math.floor(eased * target));
+          if (elapsed < 1) requestAnimationFrame(step);
+          else setCount(target);
+        };
+        requestAnimationFrame(step);
+      }
+    }, { threshold: 0.5 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target, duration]);
+
+  return (
+    <div ref={ref} className="stat-card">
+      <h3 className="stat-value">{prefix}{count.toLocaleString()}{suffix}</h3>
+      <p className="stat-label">{label}</p>
+    </div>
+  );
+}
 
 function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -454,18 +490,9 @@ function Home() {
             </div>
             
             <div className="stats-grid">
-              <div className="stat-card">
-                <h3 className="stat-value">$50M+</h3>
-                <p className="stat-label">Assets Under Management</p>
-              </div>
-              <div className="stat-card">
-                <h3 className="stat-value">25k+</h3>
-                <p className="stat-label">Active Investors</p>
-              </div>
-              <div className="stat-card">
-                <h3 className="stat-value">45%</h3>
-                <p className="stat-label">Average Annual Return</p>
-              </div>
+              <AnimatedStat target={50} prefix="$" suffix="M+" label="Assets Under Management" />
+              <AnimatedStat target={25000} suffix="+" label="Active Investors" />
+              <AnimatedStat target={45} suffix="%" label="Average Annual Return" />
               <div className="stat-card">
                 <h3 className="stat-value">24/7</h3>
                 <p className="stat-label">Expert Support</p>

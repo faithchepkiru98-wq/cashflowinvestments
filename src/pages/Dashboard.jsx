@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { LayoutDashboard, TrendingUp, Wallet, ArrowDownCircle, List, LogOut, Crown } from 'lucide-react';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function calcLiveEarnings(inv) {
@@ -300,7 +301,13 @@ function Dashboard() {
     }
   };
 
-  if (!user) return <div style={{ color: 'white', padding: '50px', textAlign: 'center' }}>Loading dashboard...</div>;
+  if (!user) return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ width: '48px', height: '48px', border: '3px solid #00e676', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <p style={{ color: 'var(--text-secondary)' }}>Loading your dashboard…</p>
+    </div>
+  );
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
@@ -341,62 +348,42 @@ function Dashboard() {
       <div className="container" style={{ display: 'flex', flex: 1, padding: '40px 20px', gap: '30px', flexWrap: 'wrap' }}>
         
         {/* Sidebar */}
-        <aside style={{ width: '100%', maxWidth: '250px', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
-          <button 
-            onClick={() => setActiveTab('overview')}
-            style={{ 
-              background: activeTab === 'overview' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-              color: activeTab === 'overview' ? 'var(--accent-blue)' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'overview' ? '3px solid var(--accent-blue)' : '3px solid transparent',
-              transition: 'all 0.2s'
+        <aside style={{ width: '100%', maxWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+          {[
+            { key: 'overview',     label: 'Overview',       icon: LayoutDashboard,    color: '#00e676' },
+            { key: 'invest',       label: 'New Investment', icon: TrendingUp,          color: '#00b0ff' },
+            { key: 'investments',  label: 'My Investments', icon: Wallet,              color: '#f5a623' },
+            { key: 'transactions', label: 'Transactions',   icon: List,                color: '#818cf8' },
+            { key: 'withdraw',     label: 'Withdraw Funds', icon: ArrowDownCircle,     color: '#ef4444' },
+          ].map(({ key, label, icon: Icon, color }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                background: activeTab === key ? `${color}18` : 'transparent',
+                color: activeTab === key ? color : 'var(--text-secondary)',
+                border: 'none', padding: '13px 16px', borderRadius: '10px',
+                textAlign: 'left', cursor: 'pointer', fontSize: '0.92rem', fontWeight: activeTab === key ? '600' : '400',
+                borderLeft: activeTab === key ? `3px solid ${color}` : '3px solid transparent',
+                transition: 'all 0.2s', width: '100%'
+              }}
+            >
+              <Icon size={18} />
+              {label}
+            </button>
+          ))}
+          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+            <button onClick={handleLogout} style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              background: 'transparent', color: 'var(--text-secondary)',
+              border: 'none', padding: '13px 16px', borderRadius: '10px',
+              textAlign: 'left', cursor: 'pointer', fontSize: '0.92rem',
+              borderLeft: '3px solid transparent', transition: 'all 0.2s', width: '100%'
             }}>
-            Overview
-          </button>
-          <button 
-            onClick={() => setActiveTab('invest')}
-            style={{ 
-              background: activeTab === 'invest' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-              color: activeTab === 'invest' ? 'var(--accent-blue)' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'invest' ? '3px solid var(--accent-blue)' : '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-            New Investment
-          </button>
-          <button 
-            onClick={() => setActiveTab('investments')}
-            style={{ 
-              background: activeTab === 'investments' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-              color: activeTab === 'investments' ? 'var(--accent-blue)' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'investments' ? '3px solid var(--accent-blue)' : '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-            My Investments
-          </button>
-          <button 
-            onClick={() => setActiveTab('transactions')}
-            style={{ 
-              background: activeTab === 'transactions' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-              color: activeTab === 'transactions' ? 'var(--accent-blue)' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'transactions' ? '3px solid var(--accent-blue)' : '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-            Transactions
-          </button>
-          <button 
-            onClick={() => setActiveTab('withdraw')}
-            style={{ 
-              background: activeTab === 'withdraw' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-              color: activeTab === 'withdraw' ? '#ef4444' : 'var(--text-primary)',
-              border: 'none', padding: '15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-              borderLeft: activeTab === 'withdraw' ? '3px solid #ef4444' : '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-            Withdraw Funds
-          </button>
+              <LogOut size={18} /> Logout
+            </button>
+          </div>
         </aside>
 
         {/* Main Content Area */}
@@ -524,8 +511,24 @@ function Dashboard() {
                     <p style={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '20px' }}>
                       ${packages[pkg].min.toLocaleString()} - ${packages[pkg].max.toLocaleString()}
                     </p>
-                    <button onClick={() => handleInvest(pkg)} className="btn btn-outline btn-block" style={{ borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)' }}>
-                      Invest Now
+                    <button
+                      onClick={() => handleInvest(pkg)}
+                      className="btn btn-block"
+                      style={{
+                        background: `${packages[pkg].color}15`,
+                        color: packages[pkg].color,
+                        border: `1px solid ${packages[pkg].color}60`,
+                        fontWeight: '700',
+                        fontSize: '0.95rem',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = packages[pkg].color; e.currentTarget.style.color = '#131722'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = `${packages[pkg].color}15`; e.currentTarget.style.color = packages[pkg].color; }}
+                    >
+                      Invest Now →
                     </button>
                   </div>
                 ))}
