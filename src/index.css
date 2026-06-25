@@ -85,7 +85,8 @@ ul {
 
 .btn-outline {
     background: transparent;
-    color: var(--text-primary);
+    color: #ffffff;
+    font-weight: 600;
     border: 1px solid var(--border-color);
 }
 
@@ -464,6 +465,16 @@ ul {
     gap: 20px;
 }
 
+.cta-actions .btn-primary {
+    background: #ffffff;
+    color: #131722;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+}
+
+.cta-actions .btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
+}
+
 .cta-actions .btn-outline {
     border-color: white;
     color: white;
@@ -489,7 +500,7 @@ ul {
 }
 
 .risk-disclosure p {
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.85);
     font-size: 0.875rem;
     max-width: 800px;
     margin: 0 auto;

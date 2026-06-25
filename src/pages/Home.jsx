@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
+import { ShieldCheck, TrendingUp, Zap, Users, BarChart3, Globe } from 'lucide-react';
 
 function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -181,7 +182,9 @@ function Home() {
   return (
     <>
       <header className="navbar" style={{
-        background: isScrolled ? 'rgba(19, 23, 34, 0.95)' : 'rgba(19, 23, 34, 0.8)',
+        background: isScrolled ? 'rgba(10, 10, 10, 0.85)' : 'rgba(19, 23, 34, 0.8)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
         boxShadow: isScrolled ? '0 4px 20px rgba(0, 0, 0, 0.5)' : 'none'
       }}>
         <div className="container nav-content">
@@ -424,7 +427,7 @@ function Home() {
 
       <main>
         {/* Live Payouts Ticker */}
-        <div style={{ background: '#111111', borderBottom: '1px solid #332d16', padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex' }}>
+        <div style={{ background: '#111111', borderBottom: '1px solid #332d16', padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', marginTop: '68px' }}>
           <div style={{ display: 'inline-block', animation: 'scrollTicker 30s linear infinite' }}>
             <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User alex*** just withdrew $4,250 via USDT</span>
             <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User mark_99 just withdrew $1,100 via BTC</span>
@@ -581,32 +584,32 @@ function Home() {
             </div>
             <div className="features-grid">
               <div className="feature-card">
-                <div className="feature-icon">🛡️</div>
+                <div className="feature-icon"><ShieldCheck size={48} color="var(--accent-blue)" /></div>
                 <h3>Secure & Licensed</h3>
                 <p>Your funds are protected by industry-leading security protocols and full regulatory compliance.</p>
               </div>
               <div className="feature-card">
-                <div className="feature-icon">📈</div>
+                <div className="feature-icon"><TrendingUp size={48} color="var(--accent-blue)" /></div>
                 <h3>High Returns</h3>
                 <p>Our expert strategies consistently deliver above-average market returns for our investors.</p>
               </div>
               <div className="feature-card">
-                <div className="feature-icon">⚡</div>
+                <div className="feature-icon"><Zap size={48} color="var(--accent-blue)" /></div>
                 <h3>Fast Payouts</h3>
                 <p>Enjoy quick and seamless withdrawals directly to your preferred wallet or bank account.</p>
               </div>
               <div className="feature-card">
-                <div className="feature-icon">👥</div>
+                <div className="feature-icon"><Users size={48} color="var(--accent-blue)" /></div>
                 <h3>Expert Team</h3>
                 <p>A dedicated team of seasoned financial professionals working around the clock for you.</p>
               </div>
               <div className="feature-card">
-                <div className="feature-icon">📊</div>
+                <div className="feature-icon"><BarChart3 size={48} color="var(--accent-blue)" /></div>
                 <h3>Real-Time Analytics</h3>
                 <p>Monitor your portfolio performance 24/7 with our advanced real-time dashboard.</p>
               </div>
               <div className="feature-card">
-                <div className="feature-icon">🌍</div>
+                <div className="feature-icon"><Globe size={48} color="var(--accent-blue)" /></div>
                 <h3>Global Reach</h3>
                 <p>Accessible from anywhere in the world, breaking down geographical financial barriers.</p>
               </div>
@@ -621,7 +624,7 @@ function Home() {
             </div>
             <div className="testimonials-grid">
               <div className="testimonial-card">
-                <p className="quote">"BetaPrime has completely transformed how I manage my crypto portfolio. The returns are consistently impressive."</p>
+                <p className="quote">"Cashflowvest has completely transformed how I manage my crypto portfolio. The returns are consistently impressive."</p>
                 <div className="author">
                   <div className="avatar">ST</div>
                   <div>
