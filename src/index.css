@@ -136,7 +136,21 @@ ul {
     width: 32px;
     height: 32px;
     background: var(--gradient-primary);
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 12px rgba(0, 230, 118, 0.4);
+    position: relative;
+}
+
+.logo-icon::after {
+    content: "C";
+    color: #131722;
+    font-size: 1.2rem;
+    font-weight: 900;
+    line-height: 1;
 }
 
 .nav-links {
