@@ -26,11 +26,43 @@ function Toast({ toasts, removeToast }) {
 // ── Stat Card ───────────────────────────────────────────────────────────────
 function StatCard({ label, value, color, icon }) {
   return (
-    <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '15px' }}>
-      <div style={{ fontSize: '2rem' }}>{icon}</div>
+    <div style={{ 
+      background: 'rgba(255, 255, 255, 0.02)', 
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      padding: '24px', 
+      borderRadius: '16px', 
+      border: '1px solid rgba(255, 255, 255, 0.05)', 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '20px',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      cursor: 'default'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-2px)';
+      e.currentTarget.style.boxShadow = `0 8px 24px ${color ? color.replace(')', ', 0.15)').replace('rgb', 'rgba') : 'rgba(255,255,255,0.05)'}`;
+      e.currentTarget.style.transform = 'translateY(-4px)';
+      e.currentTarget.style.boxShadow = `0 12px 32px ${color ? color.replace(')', ', 0.15)').replace('rgb', 'rgba') : 'rgba(0,0,0,0.2)'}`;
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+    >
+      <div style={{ 
+        fontSize: '1.8rem', 
+        width: '60px', 
+        height: '60px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: color ? `${color}15` : 'rgba(255,255,255,0.05)',
+        borderRadius: '16px'
+      }}>{icon}</div>
       <div>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
-        <h3 style={{ fontSize: '1.8rem', color: color || 'white', margin: 0 }}>{value}</h3>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: '700' }}>{label}</p>
+        <h3 style={{ fontSize: '1.6rem', color: 'white', margin: 0, fontFamily: 'Outfit, sans-serif', fontWeight: '500' }}>{value}</h3>
       </div>
     </div>
   );
@@ -228,8 +260,8 @@ function AdminDashboard() {
     { key: 'settings',    label: '⚙️ Settings' },
   ];
 
-  const thStyle = { padding: '14px 16px', color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)' };
-  const tdStyle = { padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.9rem', verticalAlign: 'middle' };
+  const thStyle = { padding: '16px 20px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.05)' };
+  const tdStyle = { padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.9rem', verticalAlign: 'middle', background: 'transparent' };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
@@ -237,7 +269,16 @@ function AdminDashboard() {
       <Toast toasts={toasts} removeToast={removeToast} />
 
       {/* Header */}
-      <header style={{ background: 'rgba(19,23,34,0.98)', borderBottom: '1px solid rgba(0,230,118,0.2)', padding: '14px 0', position: 'sticky', top: 0, zIndex: 100 }}>
+      <header style={{ 
+        background: 'rgba(15, 20, 30, 0.7)', 
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)', 
+        padding: '16px 0', 
+        position: 'sticky', 
+        top: 0, 
+        zIndex: 100 
+      }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Link to="/" className="logo">
             <div className="logo-icon" style={{ background: 'linear-gradient(135deg,#00e676,#f5a623)' }}></div>
@@ -261,10 +302,10 @@ function AdminDashboard() {
               <button key={item.key} onClick={() => setActiveTab(item.key)} style={{
                 background: activeTab === item.key ? 'rgba(0,230,118,0.1)' : 'transparent',
                 color: activeTab === item.key ? '#00e676' : 'var(--text-secondary)',
-                border: 'none', padding: '13px 15px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer',
-                borderLeft: activeTab === item.key ? '3px solid #00e676' : '3px solid transparent',
-                transition: 'all 0.2s', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                fontWeight: activeTab === item.key ? '600' : '400'
+                border: 'none', padding: '14px 18px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                fontWeight: activeTab === item.key ? '600' : '500',
+                boxShadow: activeTab === item.key ? 'inset 3px 0 0 #00e676, 0 4px 12px rgba(0,0,0,0.1)' : 'none'
               }}>
                 <span>{item.label}</span>
                 {item.badge > 0 && (
