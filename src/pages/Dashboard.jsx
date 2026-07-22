@@ -656,8 +656,8 @@ function Dashboard() {
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
                       <option value="usdt">USDT (TRC20)</option>
-                      <option value="btc">Bitcoin (BTC)</option>
-                      <option value="eth">Ethereum (ETH)</option>
+                      <option value="btc">Bitcoin (BEP20)</option>
+                      <option value="eth">Ethereum (BEP20)</option>
                     </select>
                   </div>
                   
@@ -883,7 +883,7 @@ function Dashboard() {
                         boxShadow: paymentMethod === coin ? '0 0 16px rgba(245,166,35,0.1)' : 'none'
                       }}
                     >
-                      {coin === 'usdt' ? 'USDT' : coin.toUpperCase()}
+                      {coin === 'usdt' ? 'USDT (TRC20)' : `${coin.toUpperCase()} (BEP20)`}
                     </button>
                   ))}
                 </div>
@@ -908,6 +908,12 @@ function Dashboard() {
                   {paymentMethod === 'usdt' && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: '#888', fontSize: '0.82rem', padding: '10px 14px', background: 'rgba(245,166,35,0.04)', borderRadius: '8px', border: '1px solid rgba(245,166,35,0.1)' }}>
                       <span>⚡</span> Only send USDT on the <strong style={{ color: '#f5a623' }}>TRC20 (TRON)</strong> network
+                    </div>
+                  )}
+
+                  {(paymentMethod === 'btc' || paymentMethod === 'eth') && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: '#888', fontSize: '0.82rem', padding: '10px 14px', background: 'rgba(245,166,35,0.04)', borderRadius: '8px', border: '1px solid rgba(245,166,35,0.1)' }}>
+                      <span>⚡</span> Only send {paymentMethod.toUpperCase()} on the <strong style={{ color: '#f5a623' }}>BEP20 (BSC)</strong> network
                     </div>
                   )}
 
