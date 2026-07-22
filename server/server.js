@@ -157,10 +157,16 @@ const sendEmail = async (to, subject, html) => {
 // ─── FEATURE 1: Email Verification ──────────────────────────────────────────
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password, phone } = req.body;
+        const { name, email, password, phone, referredByCode } = req.body;
 
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: 'User already exists' });
+
+        let referredById = null;
+        if (referredByCode) {
+            const referrer = await User.findOne({ referralCode: referredByCode });
+            if (referrer) referredById = referrer._id;
+        }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -174,7 +180,8 @@ app.post('/api/auth/register', async (req, res) => {
             password: hashedPassword,
             verificationToken,
             isVerified: true,
-            referralCode: generateReferralCode()
+            referralCode: generateReferralCode(),
+            referredBy: referredById
         });
 
         await newUser.save();
@@ -647,6 +654,30 @@ app.put('/api/admin/user/:id/kyc', verifyAdmin, async (req, res) => {
             : '❌ Your KYC verification was rejected. Please resubmit with a clearer document.';
         await notify(user._id, msg, status === 'approved' ? 'success' : 'error');
         res.json({ message: `KYC ${status}`, user });
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+// ─── USER SETTINGS & REFERRALS ───────────────────────────────────────────────
+app.put('/api/user/settings', verifyToken, async (req, res) => {
+    try {
+        const { name, phone, password } = req.body;
+        const updates = {};
+        if (name) updates.name = name;
+        if (phone) updates.phone = phone;
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            updates.password = await bcrypt.hash(password, salt);
+        }
+        await User.findByIdAndUpdate(req.user.id, updates);
+        res.json({ message: 'Settings updated successfully' });
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.get('/api/user/referrals', verifyToken, async (req, res) => {
+    try {
+        const referrals = await User.find({ referredBy: req.user.id }, 'name email createdAt referralBonusPaid');
+        const bonusEarned = referrals.filter(r => r.referralBonusPaid).length * 10;
+        res.json({ referrals, bonusEarned });
     } catch { res.status(500).json({ message: 'Server error' }); }
 });
 

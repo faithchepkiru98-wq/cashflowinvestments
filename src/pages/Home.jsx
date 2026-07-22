@@ -184,6 +184,7 @@ function Home() {
   const [message, setMessage] = useState('');
   const [user, setUser] = useState(null);
   const [walletAddresses, setWalletAddresses] = useState(null);
+  const [referredByCode] = useState(() => new URLSearchParams(window.location.search).get('ref') || '');
   
   const navigate = useNavigate();
 
@@ -297,7 +298,7 @@ function Home() {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authModal.type === 'login' ? { email, password } : { name, email, password, phone })
+        body: JSON.stringify(authModal.type === 'login' ? { email, password } : { name, email, password, phone, referredByCode })
       });
       
       const data = await response.json();

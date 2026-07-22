@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, Wallet, ArrowDownCircle, List, LogOut, Bell, ShieldCheck, X } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Wallet, ArrowDownCircle, List, LogOut, Bell, ShieldCheck, X, Settings, Users } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -456,6 +456,8 @@ function Dashboard() {
             { key: 'investments',  label: 'My Investments', icon: Wallet,              color: '#f5a623' },
             { key: 'transactions', label: 'Transactions',   icon: List,                color: '#818cf8' },
             { key: 'withdraw',     label: 'Withdraw Funds', icon: ArrowDownCircle,     color: '#ef4444' },
+            { key: 'referrals',    label: 'My Referrals',   icon: Users,               color: '#a78bfa' },
+            { key: 'settings',     label: 'Settings',       icon: Settings,            color: '#94a3b8' },
           ].map(({ key, label, icon: Icon, color }) => (
             <button
               key={key}
@@ -827,6 +829,16 @@ function Dashboard() {
               </div>
             </div>
           )}
+
+          {/* ── REFERRALS TAB ── */}
+          {activeTab === 'referrals' && (
+            <ReferralsTab token={localStorage.getItem('token')} user={dashboardData.user} />
+          )}
+
+          {/* ── SETTINGS TAB ── */}
+          {activeTab === 'settings' && (
+            <SettingsTab user={dashboardData.user} token={localStorage.getItem('token')} onUpdate={() => window.location.reload()} addToast={addToast} />
+          )}
         </main>
       </div>
 
@@ -993,6 +1005,187 @@ function Dashboard() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── REFERRALS TAB COMPONENT ───────────────────────────────────────────────────
+function ReferralsTab({ token, user }) {
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch('/api/user/referrals', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [token]);
+
+  const referralLink = user?.referralCode ? `${window.location.origin}/?ref=${user.referralCode}` : '';
+
+  return (
+    <div>
+      <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif' }}>My Referrals</h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '28px', fontSize: '0.9rem' }}>
+        Earn <strong style={{ color: '#a78bfa' }}>$10</strong> for every friend who signs up and makes their first deposit.
+      </p>
+
+      {/* Referral Link Card */}
+      <div style={{ background: 'linear-gradient(135deg, rgba(167,139,250,0.08), rgba(129,140,248,0.04))', border: '1px solid rgba(167,139,250,0.2)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
+        <p style={{ color: '#a78bfa', fontWeight: '700', marginBottom: '10px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your Referral Link</p>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <input readOnly value={referralLink} style={{ flex: 1, minWidth: '200px', background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: '10px', padding: '12px 16px', color: '#a78bfa', fontFamily: 'monospace', fontSize: '0.85rem', outline: 'none' }} />
+          <button onClick={() => { navigator.clipboard.writeText(referralLink); }} style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.35)', padding: '12px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>
+            Copy Link
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+        {[
+          { label: 'Total Referrals', value: loading ? '—' : (data?.referrals?.length ?? 0), color: '#a78bfa', icon: '👥' },
+          { label: 'Bonuses Earned', value: loading ? '—' : `$${data?.bonusEarned ?? 0}`, color: '#00e676', icon: '💰' },
+          { label: 'Pending Bonuses', value: loading ? '—' : `$${((data?.referrals?.length ?? 0) - (data?.referrals?.filter(r => r.referralBonusPaid).length ?? 0)) * 10}`, color: '#f5a623', icon: '⏳' },
+        ].map(s => (
+          <div key={s.label} style={{ background: `${s.color}08`, border: `1px solid ${s.color}20`, borderRadius: '14px', padding: '20px' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>{s.icon}</div>
+            <div style={{ fontSize: '1.6rem', fontWeight: '800', color: s.color, fontFamily: 'Outfit, sans-serif' }}>{s.value}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '4px' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Referrals Table */}
+      <div style={{ background: 'var(--bg-main)', borderRadius: '14px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-color)' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontFamily: 'Outfit, sans-serif' }}>Referred Users</h3>
+        </div>
+        {loading ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div>
+        ) : data?.referrals?.length > 0 ? (
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  {['Name', 'Email', 'Joined', 'Bonus Status'].map(h => (
+                    <th key={h} style={{ padding: '14px 20px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.referrals.map(r => (
+                  <tr key={r._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 20px', fontWeight: '600' }}>{r.name}</td>
+                    <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{r.email}</td>
+                    <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{new Date(r.createdAt).toLocaleDateString()}</td>
+                    <td style={{ padding: '16px 20px' }}>
+                      <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600', background: r.referralBonusPaid ? 'rgba(0,230,118,0.08)' : 'rgba(245,158,11,0.08)', color: r.referralBonusPaid ? '#00e676' : '#f59e0b', border: `1px solid ${r.referralBonusPaid ? 'rgba(0,230,118,0.2)' : 'rgba(245,158,11,0.2)'}` }}>
+                        {r.referralBonusPaid ? '✅ Paid' : '⏳ Pending'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: '50px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🤝</div>
+            <p>No referrals yet. Share your link to start earning!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── SETTINGS TAB COMPONENT ────────────────────────────────────────────────────
+function SettingsTab({ user, token, onUpdate, addToast }) {
+  const [form, setForm] = React.useState({ name: user?.name || '', phone: user?.phone || '', password: '', confirmPassword: '' });
+  const [saving, setSaving] = React.useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (form.password && form.password !== form.confirmPassword) {
+      addToast('Passwords do not match', 'error'); return;
+    }
+    setSaving(true);
+    const body = { name: form.name, phone: form.phone };
+    if (form.password) body.password = form.password;
+    try {
+      const r = await fetch('/api/user/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+      const d = await r.json();
+      if (r.ok) { addToast(d.message || 'Settings saved!', 'success'); setTimeout(onUpdate, 1000); }
+      else addToast(d.message || 'Failed to save', 'error');
+    } catch { addToast('Network error', 'error'); }
+    setSaving(false);
+  };
+
+  const kycColors = { none: '#94a3b8', pending: '#f59e0b', approved: '#00e676', rejected: '#ef4444' };
+  const kycLabel = { none: 'Not Submitted', pending: '⏳ Pending Review', approved: '✅ Approved', rejected: '❌ Rejected' };
+  const kycStatus = user?.kycStatus || 'none';
+
+  const inputStyle = { width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '13px 16px', color: 'white', fontFamily: 'Outfit, sans-serif', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' };
+
+  return (
+    <div>
+      <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif' }}>Account Settings</h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '28px', fontSize: '0.9rem' }}>Manage your profile and security settings.</p>
+
+      {/* KYC Status Banner */}
+      <div style={{ background: `${kycColors[kycStatus]}10`, border: `1px solid ${kycColors[kycStatus]}30`, borderRadius: '14px', padding: '18px 22px', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <ShieldCheck size={28} color={kycColors[kycStatus]} />
+        <div>
+          <p style={{ margin: 0, fontWeight: '700', color: kycColors[kycStatus], fontFamily: 'Outfit, sans-serif' }}>KYC Verification: {kycLabel[kycStatus]}</p>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+            {kycStatus === 'none' && 'Submit your documents in the KYC tab to unlock full withdrawal access.'}
+            {kycStatus === 'pending' && 'Your documents are under review. We\'ll notify you once complete.'}
+            {kycStatus === 'approved' && 'Your identity is verified. You have full platform access.'}
+            {kycStatus === 'rejected' && 'Your submission was rejected. Please resubmit with clearer documents.'}
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '520px' }}>
+        {/* Profile Info */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '24px' }}>
+          <h3 style={{ margin: '0 0 20px', fontSize: '1rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Outfit, sans-serif' }}>Profile Information</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: '600' }}>Full Name</label>
+              <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Your full name" />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: '600' }}>Phone Number</label>
+              <input style={inputStyle} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="Your phone number" />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: '600' }}>Email Address</label>
+              <input style={{ ...inputStyle, opacity: 0.5, cursor: 'not-allowed' }} value={user?.email || ''} readOnly />
+              <p style={{ margin: '6px 0 0', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Email cannot be changed.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Password Section */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '24px' }}>
+          <h3 style={{ margin: '0 0 20px', fontSize: '1rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Outfit, sans-serif' }}>Change Password</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: '600' }}>New Password</label>
+              <input type="password" style={inputStyle} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Leave blank to keep current" />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: '600' }}>Confirm Password</label>
+              <input type="password" style={inputStyle} value={form.confirmPassword} onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))} placeholder="Repeat new password" />
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" disabled={saving} style={{ background: 'linear-gradient(135deg, #94a3b8, #64748b)', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontSize: '1rem', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Outfit, sans-serif', opacity: saving ? 0.7 : 1, transition: 'all 0.2s' }}>
+          {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </form>
     </div>
   );
 }
