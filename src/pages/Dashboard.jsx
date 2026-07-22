@@ -601,60 +601,79 @@ function Dashboard() {
               {/* Admin Activation Link */}
 
               
-              <div style={{ background: 'var(--bg-main)', padding: '30px', borderRadius: '12px', textAlign: 'center', border: '1px dashed var(--border-color)' }}>
-                <h3 style={{ marginBottom: '15px' }}>Ready to grow your portfolio?</h3>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>Explore our high-yield investment packages and start earning today.</p>
-                <button onClick={() => setActiveTab('invest')} className="btn btn-primary">View Packages</button>
+              {/* Ready to Grow CTA */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(0,230,118,0.06) 0%, rgba(6,182,212,0.06) 100%)',
+                padding: '32px 30px',
+                borderRadius: '16px',
+                textAlign: 'center',
+                border: '1px solid rgba(0,230,118,0.15)',
+                boxShadow: '0 0 40px rgba(0,230,118,0.04)'
+              }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🚀</div>
+                <h3 style={{ marginBottom: '10px', fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem' }}>Ready to grow your portfolio?</h3>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>Explore our high-yield investment packages and start earning today.</p>
+                <button onClick={() => setActiveTab('invest')} className="btn btn-primary">View Packages →</button>
               </div>
             </div>
           )}
 
           {activeTab === 'withdraw' && (
             <div>
-              <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Withdraw Funds</h2>
-              <div style={{ background: 'var(--bg-main)', padding: '25px', borderRadius: '12px', border: '1px solid var(--border-color)', maxWidth: '500px' }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>Available Balance: <strong style={{ color: '#00e676', fontSize: '1.2rem' }}>${dashboardData.user?.balance?.toLocaleString() || '0.00'}</strong></p>
+              <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif' }}>Withdraw Funds</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '28px', fontSize: '0.9rem' }}>Funds are processed within 24–48 hours.</p>
+              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '28px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', maxWidth: '520px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,230,118,0.06)', border: '1px solid rgba(0,230,118,0.15)', borderRadius: '12px', padding: '16px 20px', marginBottom: '28px' }}>
+                  <div>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Available Balance</p>
+                    <p style={{ color: '#00e676', fontSize: '1.6rem', fontWeight: '800', fontFamily: 'Outfit, sans-serif', margin: 0 }}>${dashboardData.user?.balance?.toLocaleString() || '0.00'}</p>
+                  </div>
+                  <span style={{ fontSize: '2rem' }}>💰</span>
+                </div>
                 
                 <form onSubmit={handleWithdrawalSubmit}>
                   <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Amount to Withdraw (USD)</label>
-                    <input 
-                      type="number" 
-                      min="50"
-                      max={dashboardData.user?.balance || 0}
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      required
-                      placeholder="Min $50"
-                      style={{ width: '100%', padding: '15px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'white', outline: 'none' }}
-                    />
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Amount (USD)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0 16px', transition: 'border-color 0.2s' }}>
+                      <span style={{ color: '#00e676', fontWeight: '700', marginRight: '8px' }}>$</span>
+                      <input 
+                        type="number" 
+                        min="50"
+                        max={dashboardData.user?.balance || 0}
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        required
+                        placeholder="Min $50"
+                        style={{ width: '100%', padding: '16px 0', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '1rem' }}
+                      />
+                    </div>
                   </div>
                   
                   <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Withdrawal Method</label>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Withdrawal Method</label>
                     <select 
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      style={{ width: '100%', padding: '15px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'white', outline: 'none', appearance: 'none' }}>
+                      style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
                       <option value="usdt">USDT (TRC20)</option>
                       <option value="btc">Bitcoin (BTC)</option>
                       <option value="eth">Ethereum (ETH)</option>
                     </select>
                   </div>
                   
-                  <div style={{ marginBottom: '30px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Destination Wallet Address</label>
+                  <div style={{ marginBottom: '28px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Destination Wallet Address</label>
                     <input 
                       type="text" 
-                      value={txId} // Reusing txId for wallet address
+                      value={txId}
                       onChange={(e) => setTxId(e.target.value)}
                       required
                       placeholder={`Enter your ${paymentMethod.toUpperCase()} address`}
-                      style={{ width: '100%', padding: '15px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'white', outline: 'none' }}
+                      style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '0.9rem' }}
                     />
                   </div>
                   
-                  <button type="submit" style={{ width: '100%', background: '#ef4444', color: 'white', fontWeight: 'bold', padding: '15px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '1.1rem' }} disabled={!dashboardData.user || dashboardData.user.balance < 50}>
+                  <button type="submit" style={{ width: '100%', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', fontWeight: '700', padding: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '1rem', fontFamily: 'Outfit, sans-serif', boxShadow: '0 4px 15px rgba(239,68,68,0.2)', transition: 'all 0.2s' }} disabled={!dashboardData.user || dashboardData.user.balance < 50}>
                     Request Withdrawal
                   </button>
                 </form>
@@ -664,39 +683,47 @@ function Dashboard() {
 
           {activeTab === 'invest' && (
             <div>
-              <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Available Packages</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif' }}>Available Packages</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '28px', fontSize: '0.9rem' }}>Choose a package and start growing your portfolio today.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
                 {Object.keys(packages).map((pkg) => (
-                  <div key={pkg} style={{ background: 'var(--bg-main)', border: `1px solid ${packages[pkg].color}40`, borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: packages[pkg].color }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
-                      <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '1.5rem' }}>{packages[pkg].badge}</span> {pkg}
+                  <div key={pkg} style={{
+                    background: `linear-gradient(160deg, rgba(24,24,27,1) 0%, ${packages[pkg].color}08 100%)`,
+                    border: `1px solid ${packages[pkg].color}25`,
+                    borderRadius: '20px', padding: '24px', position: 'relative', overflow: 'hidden',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: `0 4px 20px ${packages[pkg].color}08`
+                  }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${packages[pkg].color}, transparent)` }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
+                      <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'Outfit, sans-serif' }}>
+                        <span style={{ fontSize: '1.6rem' }}>{packages[pkg].badge}</span> {pkg}
                       </h3>
-                      <span style={{ color: packages[pkg].color, background: `${packages[pkg].color}20`, padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                      <span style={{ color: packages[pkg].color, background: `${packages[pkg].color}15`, border: `1px solid ${packages[pkg].color}30`, padding: '4px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700', fontFamily: 'Outfit, sans-serif' }}>
                         {packages[pkg].returns} Return
                       </span>
                     </div>
-                    <p style={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '20px' }}>
-                      ${packages[pkg].min.toLocaleString()} - ${packages[pkg].max.toLocaleString()}
+                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.25rem', fontWeight: '800', marginBottom: '6px', fontFamily: 'Outfit, sans-serif' }}>
+                      ${packages[pkg].min.toLocaleString()} – ${packages[pkg].max.toLocaleString()}
                     </p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '20px' }}>Investment range</p>
                     <button
                       onClick={() => handleInvest(pkg)}
                       className="btn btn-block"
                       style={{
-                        background: `${packages[pkg].color}15`,
+                        background: `${packages[pkg].color}12`,
                         color: packages[pkg].color,
-                        border: `1px solid ${packages[pkg].color}60`,
+                        border: `1px solid ${packages[pkg].color}40`,
                         fontWeight: '700',
                         fontSize: '0.95rem',
-                        padding: '12px',
-                        borderRadius: '8px',
+                        padding: '13px',
+                        borderRadius: '12px',
                         cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        boxShadow: `0 0 10px ${packages[pkg].color}40`
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: `0 0 0 ${packages[pkg].color}00`
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = packages[pkg].color; e.currentTarget.style.color = '#131722'; e.currentTarget.style.boxShadow = `0 0 20px ${packages[pkg].color}`; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = `${packages[pkg].color}15`; e.currentTarget.style.color = packages[pkg].color; e.currentTarget.style.boxShadow = `0 0 10px ${packages[pkg].color}40`; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = packages[pkg].color; e.currentTarget.style.color = '#09090b'; e.currentTarget.style.boxShadow = `0 6px 24px ${packages[pkg].color}30`; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = `${packages[pkg].color}12`; e.currentTarget.style.color = packages[pkg].color; e.currentTarget.style.boxShadow = `0 0 0 ${packages[pkg].color}00`; e.currentTarget.style.transform = 'translateY(0)'; }}
                     >
                       Invest Now →
                     </button>
@@ -728,27 +755,36 @@ function Dashboard() {
 
           {activeTab === 'transactions' && (
             <div>
-              <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Transaction History</h2>
-              <div style={{ background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
+              <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif' }}>Transaction History</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>A full record of all your deposits and withdrawals.</p>
+              <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', overflowX: 'auto', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '500px' }}>
-                  <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <tr>
-                      <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Date</th>
-                      <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Type</th>
-                      <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Amount</th>
-                      <th style={{ padding: '15px', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Status</th>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <th style={{ padding: '14px 20px', color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'Outfit, sans-serif' }}>Date</th>
+                      <th style={{ padding: '14px 20px', color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'Outfit, sans-serif' }}>Type</th>
+                      <th style={{ padding: '14px 20px', color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'Outfit, sans-serif' }}>Amount</th>
+                      <th style={{ padding: '14px 20px', color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'Outfit, sans-serif' }}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {dashboardData.transactions?.length > 0 ? (
                       dashboardData.transactions.map(tx => (
-                        <tr key={tx._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '15px' }}>{new Date(tx.createdAt).toLocaleDateString()}</td>
-                          <td style={{ padding: '15px', textTransform: 'capitalize' }}>{tx.type} {tx.method ? `(${tx.method.toUpperCase()})` : ''}</td>
-                          <td style={{ padding: '15px' }}>${tx.amount.toLocaleString()}</td>
-                          <td style={{ padding: '15px' }}>
+                        <tr key={tx._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{new Date(tx.createdAt).toLocaleDateString()}</td>
+                          <td style={{ padding: '16px 20px', textTransform: 'capitalize', fontWeight: '600' }}>{tx.type} {tx.method ? <span style={{ color: 'var(--text-secondary)', fontWeight: '400', fontSize: '0.85rem' }}>({tx.method.toUpperCase()})</span> : ''}</td>
+                          <td style={{ padding: '16px 20px', fontWeight: '700', fontFamily: 'Outfit, sans-serif', color: tx.type === 'withdrawal' ? '#ef4444' : '#00e676' }}>
+                            {tx.type === 'withdrawal' ? '-' : '+'}${tx.amount.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '16px 20px' }}>
                             <span style={{ 
-                              color: tx.status === 'completed' ? '#10b981' : tx.status === 'pending' ? '#f59e0b' : '#ef4444' 
+                              color: tx.status === 'completed' ? '#10b981' : tx.status === 'pending' ? '#f59e0b' : '#ef4444',
+                              background: tx.status === 'completed' ? 'rgba(16,185,129,0.08)' : tx.status === 'pending' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
+                              border: `1px solid ${tx.status === 'completed' ? 'rgba(16,185,129,0.2)' : tx.status === 'pending' ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                              padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600', textTransform: 'capitalize'
                             }}>
                               {tx.status}
                             </span>
@@ -757,7 +793,10 @@ function Dashboard() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>No transactions found.</td>
+                        <td colSpan="4" style={{ padding: '50px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📋</div>
+                          No transactions found.
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -772,27 +811,34 @@ function Dashboard() {
       {isCheckoutOpen && selectedPackage && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-          zIndex: 2000, backdropFilter: 'blur(5px)', overflowY: 'auto', padding: '20px'
+          background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 2000, backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', overflowY: 'auto', padding: '20px'
         }}>
           <div style={{
-            background: '#11100b', padding: '40px', borderRadius: '24px',
-            width: '100%', maxWidth: '500px', border: '1px solid #332d16', position: 'relative',
+            background: 'rgba(15,14,12,0.95)',
+            backdropFilter: 'blur(20px)',
+            padding: '40px', borderRadius: '28px',
+            width: '100%', maxWidth: '520px',
+            border: '1px solid rgba(245,166,35,0.2)',
+            boxShadow: '0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(245,166,35,0.04)',
+            position: 'relative',
             fontFamily: 'Inter, sans-serif'
           }}>
             <button 
               onClick={() => setIsCheckoutOpen(false)}
-              style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer' }}
+              style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#888', fontSize: '1.2rem', cursor: 'pointer', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'white'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#888'; }}
             >&times;</button>
             
-            {/* Header section like image */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
-              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <div style={{ border: '1px solid #f5a623', color: '#f5a623', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                  B
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div style={{ background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.3)', color: '#f5a623', width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', fontSize: '1.8rem' }}>
+                  {selectedPackage.badge || '💎'}
                 </div>
                 <div>
-                  <h2 style={{ color: 'white', margin: 0, fontSize: '1.4rem' }}>Pay with Crypto</h2>
+                  <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: '1.4rem', fontFamily: 'Outfit, sans-serif' }}>Pay with Crypto</h2>
                   <p style={{ color: '#f5a623', margin: 0, fontSize: '0.9rem', fontWeight: '600' }}>
                     {selectedPackage.name.toUpperCase()} — {selectedPackage.returns} Return
                   </p>
@@ -802,12 +848,10 @@ function Dashboard() {
 
             <form onSubmit={handleCheckoutSubmit}>
               
-              <div style={{ marginBottom: '25px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  Enter Investment Amount
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', background: '#1a1811', border: '1px solid #332d16', borderRadius: '12px', padding: '0 15px' }}>
-                  <span style={{ color: '#f5a623', fontSize: '1.2rem', fontWeight: 'bold' }}>$</span>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Investment Amount</label>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(245,166,35,0.05)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '14px', padding: '0 18px' }}>
+                  <span style={{ color: '#f5a623', fontSize: '1.3rem', fontWeight: '800', marginRight: '8px' }}>$</span>
                   <input 
                     type="number" 
                     min={selectedPackage.min} 
@@ -815,21 +859,16 @@ function Dashboard() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     required
-                    style={{
-                      width: '100%', padding: '15px 10px', background: 'transparent', border: 'none',
-                      color: 'white', outline: 'none', fontSize: '1.2rem', fontWeight: 'bold'
-                    }}
+                    style={{ width: '100%', padding: '16px 0', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Outfit, sans-serif' }}
                   />
                 </div>
-                <p style={{ color: '#666', fontSize: '0.8rem', marginTop: '8px' }}>
-                  Min: ${selectedPackage.min.toLocaleString()} - Max: ${selectedPackage.max.toLocaleString()}
+                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginTop: '8px' }}>
+                  Range: ${selectedPackage.min.toLocaleString()} – ${selectedPackage.max.toLocaleString()}
                 </p>
               </div>
 
-              <div style={{ marginBottom: '25px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  Select Crypto Network
-                </label>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Select Network</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   {['usdt', 'btc', 'eth'].map(coin => (
                     <button
@@ -837,96 +876,88 @@ function Dashboard() {
                       type="button"
                       onClick={() => setPaymentMethod(coin)}
                       style={{
-                        flex: 1, padding: '12px 0', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
-                        background: paymentMethod === coin ? 'rgba(245, 166, 35, 0.1)' : 'transparent',
-                        border: paymentMethod === coin ? '1px solid #f5a623' : '1px solid #332d16',
-                        color: paymentMethod === coin ? '#f5a623' : '#888'
+                        flex: 1, padding: '12px 0', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.85rem',
+                        background: paymentMethod === coin ? 'rgba(245,166,35,0.12)' : 'rgba(255,255,255,0.03)',
+                        border: paymentMethod === coin ? '1px solid rgba(245,166,35,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                        color: paymentMethod === coin ? '#f5a623' : '#666',
+                        boxShadow: paymentMethod === coin ? '0 0 16px rgba(245,166,35,0.1)' : 'none'
                       }}
                     >
-                      {coin === 'usdt' ? 'USDT (TRC20)' : coin.toUpperCase()}
+                      {coin === 'usdt' ? 'USDT' : coin.toUpperCase()}
                     </button>
                   ))}
                 </div>
               </div>
 
               {walletAddresses && (
-                <div style={{ marginBottom: '30px' }}>
-                  <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                    Send To This Address
-                  </label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: '#1a1811', border: '1px solid #332d16', borderRadius: '12px', padding: '15px' }}>
-                    <div style={{ color: '#f5a623', marginRight: '15px' }}>💳</div>
-                    <div style={{ flex: 1, color: '#f5a623', wordBreak: 'break-all', fontSize: '0.95rem', fontFamily: 'monospace' }}>
+                <div style={{ marginBottom: '28px' }}>
+                  <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Send To This Address</label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(245,166,35,0.05)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '14px', padding: '16px 18px', gap: '12px' }}>
+                    <div style={{ flex: 1, color: '#f5a623', wordBreak: 'break-all', fontSize: '0.88rem', fontFamily: 'monospace', lineHeight: '1.5' }}>
                       {walletAddresses[paymentMethod]}
                     </div>
                     <button 
                       type="button" 
                       onClick={() => { navigator.clipboard.writeText(walletAddresses[paymentMethod]); setCopied(true); setTimeout(()=>setCopied(false), 2000); }}
-                      style={{ background: 'transparent', border: '1px solid #332d16', color: '#f5a623', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', marginLeft: '10px' }}
+                      style={{ background: copied ? 'rgba(0,230,118,0.15)' : 'rgba(245,166,35,0.1)', border: `1px solid ${copied ? 'rgba(0,230,118,0.4)' : 'rgba(245,166,35,0.3)'}`, color: copied ? '#00e676' : '#f5a623', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
                     >
-                      {copied ? 'Copied!' : 'Copy'}
+                      {copied ? '✓ Copied!' : 'Copy'}
                     </button>
                   </div>
                   
                   {paymentMethod === 'usdt' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px', color: '#888', fontSize: '0.85rem' }}>
-                      <span style={{ color: '#f5a623' }}>⚠️</span> Only send USDT on the <strong style={{ color: '#f5a623' }}>TRC20 (TRON)</strong> network to this address
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: '#888', fontSize: '0.82rem', padding: '10px 14px', background: 'rgba(245,166,35,0.04)', borderRadius: '8px', border: '1px solid rgba(245,166,35,0.1)' }}>
+                      <span>⚡</span> Only send USDT on the <strong style={{ color: '#f5a623' }}>TRC20 (TRON)</strong> network
                     </div>
                   )}
 
-                  <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '12px', padding: '15px', marginTop: '15px', display: 'flex', gap: '10px' }}>
-                    <span style={{ color: '#ef4444' }}>⚠️</span>
-                    <p style={{ color: '#888', margin: 0, fontSize: '0.85rem' }}>
-                      Sending on the wrong network will result in <strong style={{ color: '#ef4444' }}>permanent loss of funds</strong>.
+                  <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', padding: '14px 16px', marginTop: '12px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <span style={{ color: '#ef4444', fontSize: '1rem' }}>⚠️</span>
+                    <p style={{ color: '#888', margin: 0, fontSize: '0.82rem', lineHeight: '1.5' }}>
+                      Wrong network = <strong style={{ color: '#ef4444' }}>permanent loss of funds</strong>. Always verify before sending.
                     </p>
                   </div>
                 </div>
               )}
 
-              <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  Submit Your Payment Proof
-                </label>
+              <div style={{ marginBottom: '28px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', color: '#888', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Payment Proof</label>
                 
-                <div style={{ marginBottom: '15px' }}>
-                  <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '5px' }}>Transaction Hash (TX ID)</p>
+                <div style={{ marginBottom: '14px' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginBottom: '8px' }}>Transaction Hash (TX ID)</p>
                   <input 
                     type="text" 
                     value={txId}
                     onChange={(e) => setTxId(e.target.value)}
                     placeholder="e.g. 0xabc123..."
                     required
-                    style={{
-                      width: '100%', padding: '15px', borderRadius: '10px',
-                      background: '#1a1811', border: '1px solid #332d16',
-                      color: 'white', outline: 'none'
-                    }}
+                    style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '0.88rem' }}
                   />
                 </div>
                 
                 <div>
-                  <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '5px' }}>Telegram Username or Email</p>
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginBottom: '8px' }}>Telegram Username or Email</p>
                   <input 
                     type="text" 
                     value={contactInfo}
                     onChange={(e) => setContactInfo(e.target.value)}
                     placeholder="Where should we contact you?"
                     required
-                    style={{
-                      width: '100%', padding: '15px', borderRadius: '10px',
-                      background: '#1a1811', border: '1px solid #332d16',
-                      color: 'white', outline: 'none'
-                    }}
+                    style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', outline: 'none', fontSize: '0.9rem' }}
                   />
                 </div>
               </div>
 
               <button type="submit" style={{ 
-                width: '100%', background: '#f5a623', color: '#11100b', 
-                fontWeight: 'bold', fontSize: '1.1rem', padding: '16px', 
-                border: 'none', borderRadius: '12px', cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(245, 166, 35, 0.2)', transition: 'all 0.2s'
-              }}>
+                width: '100%', background: 'linear-gradient(135deg, #f5a623, #e09614)', color: '#09090b', 
+                fontWeight: '800', fontSize: '1.05rem', padding: '18px', 
+                border: 'none', borderRadius: '14px', cursor: 'pointer',
+                fontFamily: 'Outfit, sans-serif',
+                boxShadow: '0 6px 24px rgba(245,166,35,0.25)', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(245,166,35,0.4)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(245,166,35,0.25)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
                 Submit Payment Proof ✅
               </button>
             </form>
