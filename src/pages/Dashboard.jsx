@@ -347,31 +347,37 @@ function Dashboard() {
   };
 
   if (!user) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ width: '48px', height: '48px', border: '3px solid #00e676', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <p style={{ color: 'var(--text-secondary)' }}>Loading your dashboard…</p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '20px' }}>
+      <div style={{
+        width: '56px', height: '56px',
+        border: '3px solid rgba(0,230,118,0.1)',
+        borderTop: '3px solid #00e676',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite'
+      }} />
+      <p style={{ color: 'var(--text-secondary)', fontFamily: 'Outfit, sans-serif', letterSpacing: '0.05em' }}>Loading your dashboard…</p>
     </div>
   );
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
-      <style>{`@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
       {/* Toast Notifications */}
       <div style={{ position: 'fixed', bottom: '30px', right: '30px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {toasts.map(t => (
           <div key={t.id} style={{
-            background: t.type === 'success' ? '#064e3b' : '#7f1d1d',
-            border: `1px solid ${t.type === 'success' ? '#10b981' : '#ef4444'}`,
-            color: 'white', padding: '14px 20px', borderRadius: '10px', minWidth: '280px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.4)', fontSize: '0.9rem', animation: 'slideIn 0.3s ease'
+            background: t.type === 'success' ? 'rgba(6,78,59,0.9)' : 'rgba(127,29,29,0.9)',
+            backdropFilter: 'blur(12px)',
+            border: `1px solid ${t.type === 'success' ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`,
+            color: 'white', padding: '14px 20px', borderRadius: '14px', minWidth: '280px',
+            boxShadow: `0 8px 32px ${t.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
+            fontSize: '0.9rem', animation: 'slideIn 0.3s ease'
           }}>
             {t.type === 'success' ? '✅' : '❌'} {t.message}
           </div>
         ))}
       </div>
       {/* Dashboard Nav */}
-      <header className="navbar" style={{ background: 'rgba(19, 23, 34, 1)', borderBottom: '1px solid var(--border-color)', padding: '15px 0' }}>
+      <header className="navbar" style={{ background: 'rgba(9, 9, 11, 0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '15px 0' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Link to="/" className="logo">
             <div className="logo-icon"></div>
@@ -437,24 +443,28 @@ function Dashboard() {
               onClick={() => setActiveTab(key)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
-                background: activeTab === key ? `${color}18` : 'transparent',
+                background: activeTab === key ? `${color}15` : 'transparent',
                 color: activeTab === key ? color : 'var(--text-secondary)',
-                border: 'none', padding: '13px 16px', borderRadius: '10px',
-                textAlign: 'left', cursor: 'pointer', fontSize: '0.92rem', fontWeight: activeTab === key ? '600' : '400',
+                border: 'none', padding: '13px 16px', borderRadius: '12px',
+                textAlign: 'left', cursor: 'pointer', fontSize: '0.92rem',
+                fontWeight: activeTab === key ? '700' : '500',
+                fontFamily: 'Outfit, sans-serif',
                 borderLeft: activeTab === key ? `3px solid ${color}` : '3px solid transparent',
-                transition: 'all 0.2s', width: '100%'
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', width: '100%',
+                boxShadow: activeTab === key ? `0 4px 15px ${color}15` : 'none'
               }}
             >
               <Icon size={18} />
               {label}
             </button>
           ))}
-          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <button onClick={handleLogout} style={{
               display: 'flex', alignItems: 'center', gap: '12px',
               background: 'transparent', color: 'var(--text-secondary)',
-              border: 'none', padding: '13px 16px', borderRadius: '10px',
+              border: 'none', padding: '13px 16px', borderRadius: '12px',
               textAlign: 'left', cursor: 'pointer', fontSize: '0.92rem',
+              fontFamily: 'Outfit, sans-serif',
               borderLeft: '3px solid transparent', transition: 'all 0.2s', width: '100%'
             }}>
               <LogOut size={18} /> Logout
@@ -463,7 +473,7 @@ function Dashboard() {
         </aside>
 
         {/* Main Content Area */}
-        <main style={{ flex: 1, minWidth: '300px', background: 'var(--bg-card)', borderRadius: '16px', padding: '30px', border: '1px solid var(--border-color)' }}>
+        <main style={{ flex: 1, minWidth: '300px', background: 'rgba(24,24,27,0.6)', backdropFilter: 'blur(16px)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
           
           {activeTab === 'overview' && (
             <div>
@@ -487,16 +497,16 @@ function Dashboard() {
 
               {/* Stat Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
-                <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ background: 'rgba(0,230,118,0.04)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,230,118,0.12)' }}>
                   <LiveBalance baseBalance={dashboardData.user?.balance} investments={dashboardData.investments || []} />
                 </div>
-                <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ background: 'rgba(0,176,255,0.04)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,176,255,0.12)' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Active Investments</p>
-                  <h3 style={{ fontSize: '2rem', color: 'var(--accent-blue)' }}>{dashboardData.investments?.filter(i => i.status === 'active').length || 0}</h3>
+                  <h3 style={{ fontSize: '2rem', color: '#00b0ff', fontFamily: 'Outfit, sans-serif', fontWeight: '800' }}>{dashboardData.investments?.filter(i => i.status === 'active').length || 0}</h3>
                 </div>
-                <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ background: 'rgba(16,185,129,0.04)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(16,185,129,0.12)' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Total Profit</p>
-                  <h3 style={{ fontSize: '2rem', color: '#10b981' }}>${dashboardData.user?.profit?.toLocaleString() || '0.00'}</h3>
+                  <h3 style={{ fontSize: '2rem', color: '#10b981', fontFamily: 'Outfit, sans-serif', fontWeight: '800' }}>${dashboardData.user?.profit?.toLocaleString() || '0.00'}</h3>
                 </div>
               </div>
 

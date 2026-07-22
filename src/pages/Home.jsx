@@ -350,10 +350,10 @@ function Home() {
     <>
       <CryptoTicker />
       <header className="navbar" style={{
-        background: isScrolled ? 'rgba(10, 10, 10, 0.85)' : 'rgba(19, 23, 34, 0.8)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-        boxShadow: isScrolled ? '0 4px 20px rgba(0, 0, 0, 0.5)' : 'none'
+        background: isScrolled ? 'rgba(9, 9, 11, 0.95)' : 'rgba(9, 9, 11, 0.7)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.6)' : 'none'
       }}>
         <div className="container nav-content">
           <div className="logo">
@@ -367,9 +367,9 @@ function Home() {
             top: isMobileMenuOpen ? '100%' : '',
             left: isMobileMenuOpen ? '0' : '',
             width: isMobileMenuOpen ? '100%' : '',
-            background: isMobileMenuOpen ? 'rgba(19, 23, 34, 0.98)' : '',
+            background: isMobileMenuOpen ? 'rgba(9, 9, 11, 0.98)' : '',
             padding: isMobileMenuOpen ? '20px' : '',
-            borderBottom: isMobileMenuOpen ? '1px solid var(--border-color)' : '',
+            borderBottom: isMobileMenuOpen ? '1px solid rgba(255,255,255,0.06)' : '',
             gap: isMobileMenuOpen ? '20px' : ''
           }}>
             <a href="#home" onClick={(e) => handleSmoothScroll(e, '#home')}>Home</a>
@@ -384,7 +384,7 @@ function Home() {
             top: isMobileMenuOpen ? 'calc(100% + 220px)' : '',
             left: isMobileMenuOpen ? '0' : '',
             width: isMobileMenuOpen ? '100%' : '',
-            background: isMobileMenuOpen ? 'rgba(11, 17, 32, 0.98)' : '',
+            background: isMobileMenuOpen ? 'rgba(9, 9, 11, 0.98)' : '',
             padding: isMobileMenuOpen ? '20px' : '',
             justifyContent: isMobileMenuOpen ? 'center' : ''
           }}>
@@ -413,18 +413,22 @@ function Home() {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(0,0,0,0.8)',
+          background: 'rgba(0,0,0,0.75)',
           display: 'flex', justifyContent: 'center', alignItems: 'center',
           zIndex: 2000,
-          backdropFilter: 'blur(5px)'
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)'
         }}>
           <div style={{
-            background: 'var(--bg-card)',
-            padding: '40px',
-            borderRadius: '16px',
+            background: 'rgba(24, 24, 27, 0.9)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            padding: '44px',
+            borderRadius: '24px',
             width: '100%',
-            maxWidth: '400px',
-            border: '1px solid var(--border-color)',
+            maxWidth: '420px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.7)',
             position: 'relative'
           }}>
             <button 
@@ -595,19 +599,18 @@ function Home() {
 
       <main>
         {/* Live Payouts Ticker */}
-        <div style={{ background: '#111111', borderBottom: '1px solid #332d16', padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', marginTop: '68px' }}>
+        <div style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(0,230,118,0.1)', padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', marginTop: '68px' }}>
           <div style={{ display: 'inline-block', animation: 'scrollTicker 30s linear infinite' }}>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User alex*** just withdrew $4,250 via USDT</span>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User mark_99 just withdrew $1,100 via BTC</span>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User sarah.t just withdrew $8,500 via ETH</span>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User crypto_king just withdrew $12,400 via USDT</span>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User david_w just withdrew $2,300 via BTC</span>
-            {/* Duplicate for seamless looping */}
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User alex*** just withdrew $4,250 via USDT</span>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User mark_99 just withdrew $1,100 via BTC</span>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User sarah.t just withdrew $8,500 via ETH</span>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User crypto_king just withdrew $12,400 via USDT</span>
-            <span style={{ color: '#00e676', marginRight: '50px', fontSize: '0.85rem' }}>✓ User david_w just withdrew $2,300 via BTC</span>
+            {[...Array(2)].map((_, i) => (
+              <span key={i} style={{ display: 'inline-flex', gap: '60px' }}>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ color: '#00e676', fontWeight: '800' }}>✓</span> alex*** withdrew $4,250 · USDT</span>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '800' }}>✓</span> mark_99 withdrew $1,100 · BTC</span>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '800' }}>✓</span> sarah.t withdrew $8,500 · ETH</span>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '800' }}>✓</span> crypto_king withdrew $12,400 · USDT</span>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '800' }}>✓</span> david_w withdrew $2,300 · BTC</span>
+                <span style={{ color: 'rgba(0,230,118,0.5)', marginRight: '60px' }}>|</span>
+              </span>
+            ))}
           </div>
         </div>
 
@@ -621,7 +624,7 @@ function Home() {
               <a href="#features" onClick={(e) => handleSmoothScroll(e, '#features')} className="btn btn-outline btn-lg">View Packages</a>
             </div>
             
-            <div className="stats-grid">
+            <div className="stats-grid glass-panel">
               <AnimatedStat target={50} prefix="$" suffix="M+" label="Assets Under Management" />
               <AnimatedStat target={25000} suffix="+" label="Active Investors" />
               <AnimatedStat target={45} suffix="%" label="Average Annual Return" />
@@ -781,37 +784,34 @@ function Home() {
             <div className="section-header">
               <h2 className="section-title">What Our <span className="text-gradient">Investors Say</span></h2>
             </div>
-            <div className="testimonials-grid">
-              <div className="testimonial-card">
-                <p className="quote">"Cashflowvest has completely transformed how I manage my crypto portfolio. The returns are consistently impressive."</p>
-                <div className="author">
-                  <div className="avatar">ST</div>
-                  <div>
-                    <h4>Sarah Thompson</h4>
-                    <span>Pro Investor</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '28px' }}>
+              {[
+                { initials: 'ST', name: 'Sarah Thompson', role: 'Pro Investor', quote: '"Cashflowvest has completely transformed how I manage my crypto portfolio. The returns are consistently impressive."', stars: 5 },
+                { initials: 'MJ', name: 'Michael Johnson', role: 'Business Owner', quote: '"I was skeptical at first, but Cashflowvest proved their worth within the first week. Instant payouts are a game changer."', stars: 5 },
+                { initials: 'DC', name: 'David Chen', role: 'Software Engineer', quote: '"The 24/7 support team is incredible. They walked me through everything and helped me choose the right package."', stars: 5 },
+              ].map(t => (
+                <div key={t.name} style={{
+                  background: 'rgba(24,24,27,0.7)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: '20px',
+                  padding: '36px 28px',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px'
+                }}>
+                  <div style={{ color: '#f5a623', fontSize: '1rem', letterSpacing: '2px' }}>{'★'.repeat(t.stars)}</div>
+                  <p style={{ fontSize: '1.05rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.85)', lineHeight: '1.7', flexGrow: 1 }}>{t.quote}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #00e676, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: '#022c22', fontSize: '1rem', fontFamily: 'Outfit, sans-serif', flexShrink: 0 }}>{t.initials}</div>
+                    <div>
+                      <p style={{ fontWeight: '700', color: 'white', marginBottom: '2px' }}>{t.name}</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t.role}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="testimonial-card">
-                <p className="quote">"I was skeptical at first, but Cashflowvest proved their worth within the first week. Instant payouts are a game changer."</p>
-                <div className="author">
-                  <div className="avatar">MJ</div>
-                  <div>
-                    <h4>Michael Johnson</h4>
-                    <span>Business Owner</span>
-                  </div>
-                </div>
-              </div>
-              <div className="testimonial-card">
-                <p className="quote">"The 24/7 support team is incredible. They walked me through everything and helped me choose the right package."</p>
-                <div className="author">
-                  <div className="avatar">DC</div>
-                  <div>
-                    <h4>David Chen</h4>
-                    <span>Software Engineer</span>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
@@ -819,7 +819,7 @@ function Home() {
         {/* ROI Calculator Section */}
         <section className="section animate-on-scroll" style={{ paddingTop: 0 }}>
           <div className="container">
-            <div style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #111827 100%)', border: '1px solid rgba(0,230,118,0.2)', borderRadius: '24px', padding: '60px 50px' }}>
+            <div style={{ background: 'rgba(18,18,20,0.8)', backdropFilter: 'blur(16px)', border: '1px solid rgba(0,230,118,0.15)', borderRadius: '28px', padding: '60px 50px', boxShadow: '0 0 60px rgba(0,230,118,0.05)' }}>
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                 <h2 className="section-title">💰 Investment <span className="text-gradient">Calculator</span></h2>
                 <p className="section-desc">See exactly how much you'll earn before you invest.</p>
