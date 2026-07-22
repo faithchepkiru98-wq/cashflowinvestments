@@ -78,12 +78,12 @@ function CryptoTicker() {
 // ── ROI Calculator ─────────────────────────────────────────────────────────────
 function RoiCalculator({ onInvest }) {
   const packages = {
-    'Starter':  { returns: 8,  min: 50,    max: 499,   durationHrs: 6,  color: '#10b981' },
-    'Basic':    { returns: 10, min: 500,   max: 1999,  durationHrs: 9,  color: '#00b0ff' },
-    'Bronze':   { returns: 15, min: 2000,  max: 4999,  durationHrs: 12, color: '#cd7f32' },
-    'Silver':   { returns: 20, min: 5000,  max: 14999, durationHrs: 15, color: '#9ca3af' },
-    'Gold':     { returns: 25, min: 15000, max: 29999, durationHrs: 24, color: '#f5a623' },
-    'Diamond':  { returns: 30, min: 30000, max: 100000,durationHrs: 48, color: '#818cf8' },
+    'Starter':  { returns: 42, min: 50,    max: 499,   durationHrs: 6,  color: '#10b981' },
+    'Basic':    { returns: 48, min: 500,   max: 1999,  durationHrs: 9,  color: '#00b0ff' },
+    'Bronze':   { returns: 54, min: 2000,  max: 4999,  durationHrs: 12, color: '#cd7f32' },
+    'Silver':   { returns: 60, min: 5000,  max: 14999, durationHrs: 15, color: '#9ca3af' },
+    'Gold':     { returns: 65, min: 15000, max: 29999, durationHrs: 24, color: '#f5a623' },
+    'Diamond':  { returns: 70, min: 30000, max: 100000,durationHrs: 48, color: '#818cf8' },
   };
 
   const [selectedPkg, setSelectedPkg] = React.useState('Starter');

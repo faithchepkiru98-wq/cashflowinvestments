@@ -179,12 +179,12 @@ function Dashboard() {
   // Progressive packages — starts at $50, each tier unlocks higher returns.
   // Durations live on the server (PACKAGE_DURATIONS); client only needs display info.
   const packages = {
-    'Starter':  { returns: '8%',  min: 50,    max: 499,   badge: '🌱', color: '#10b981' },
-    'Basic':    { returns: '10%', min: 500,   max: 1999,  badge: '⭐', color: '#00b0ff' },
-    'Bronze':   { returns: '15%', min: 2000,  max: 4999,  badge: '🥉', color: '#cd7f32' },
-    'Silver':   { returns: '20%', min: 5000,  max: 14999, badge: '🥈', color: '#9ca3af' },
-    'Gold':     { returns: '25%', min: 15000, max: 29999, badge: '🥇', color: '#f5a623' },
-    'Diamond':  { returns: '30%', min: 30000, max: 100000,badge: '💎', color: '#818cf8' },
+    'Starter':  { returns: '42%', min: 50,    max: 499,   badge: '🌱', color: '#10b981' },
+    'Basic':    { returns: '48%', min: 500,   max: 1999,  badge: '⭐', color: '#00b0ff' },
+    'Bronze':   { returns: '54%', min: 2000,  max: 4999,  badge: '🥉', color: '#cd7f32' },
+    'Silver':   { returns: '60%', min: 5000,  max: 14999, badge: '🥈', color: '#9ca3af' },
+    'Gold':     { returns: '65%', min: 15000, max: 29999, badge: '🥇', color: '#f5a623' },
+    'Diamond':  { returns: '70%', min: 30000, max: 100000,badge: '💎', color: '#818cf8' },
   };
 
   useEffect(() => {
