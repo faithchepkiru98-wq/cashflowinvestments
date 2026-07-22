@@ -167,6 +167,7 @@ function Dashboard() {
   const [broadcasts, setBroadcasts] = useState([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [kycFile, setKycFile] = useState(null);
+  const [kycAddressFile, setKycAddressFile] = useState(null);
   const [kycSubmitting, setKycSubmitting] = useState(false);
 
   const addToast = (message, type = 'success') => {
@@ -239,22 +240,40 @@ function Dashboard() {
   };
 
   const submitKyc = async () => {
-    if (!kycFile) return;
+    if (!kycFile || !kycAddressFile) {
+      addToast('Please select both National ID and Proof of Address', 'error');
+      return;
+    }
     setKycSubmitting(true);
-    const reader = new FileReader();
-    reader.onload = async (e) => {
+    
+    try {
+      const getBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+
+      const [documentBase64, addressDocumentBase64] = await Promise.all([
+        getBase64(kycFile),
+        getBase64(kycAddressFile)
+      ]);
+
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/user/kyc`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ document: e.target.result })
+        body: JSON.stringify({ document: documentBase64, addressDocument: addressDocumentBase64 })
       });
       const data = await res.json();
       addToast(data.message, res.ok ? 'success' : 'error');
       if (res.ok) fetchDashboardData(token);
+    } catch (err) {
+      console.error('KYC submission error:', err);
+      addToast('Failed to read files. Please try again.', 'error');
+    } finally {
       setKycSubmitting(false);
-    };
-    reader.readAsDataURL(kycFile);
+    }
   };
 
   const handleLogout = () => {
@@ -561,9 +580,13 @@ function Dashboard() {
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                           <input type="file" accept="image/*,.pdf" id="kyc-file" style={{ display: 'none' }} onChange={e => setKycFile(e.target.files[0])} />
                           <label htmlFor="kyc-file" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                            {kycFile ? kycFile.name : '📎 Select ID Document'}
+                            {kycFile ? kycFile.name : '📎 National ID'}
                           </label>
-                          {kycFile && (
+                          <input type="file" accept="image/*,.pdf" id="kyc-address" style={{ display: 'none' }} onChange={e => setKycAddressFile(e.target.files[0])} />
+                          <label htmlFor="kyc-address" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                            {kycAddressFile ? kycAddressFile.name : '📎 Proof of Address'}
+                          </label>
+                          {(kycFile && kycAddressFile) && (
                             <button onClick={submitKyc} disabled={kycSubmitting} style={{ background: '#00e676', color: '#131722', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem' }}>
                               {kycSubmitting ? 'Submitting...' : 'Submit for Verification'}
                             </button>

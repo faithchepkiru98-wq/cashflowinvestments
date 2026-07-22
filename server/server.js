@@ -71,6 +71,7 @@ const userSchema = new mongoose.Schema({
     referralBonusPaid:   { type: Boolean, default: false },
     kycStatus:           { type: String, default: 'none' }, // none, pending, approved, rejected
     kycDocument:         { type: String }, // URL or base64 of ID doc
+    kycAddressDocument:  { type: String }, // URL or base64 of Address doc
     createdAt:           { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
@@ -629,9 +630,9 @@ app.delete('/api/admin/broadcast/:id', verifyAdmin, async (req, res) => {
 // ─── KYC ─────────────────────────────────────────────────────────────────────
 app.post('/api/user/kyc', verifyToken, async (req, res) => {
     try {
-        const { document } = req.body; // base64 or URL string
-        if (!document) return res.status(400).json({ message: 'Document required' });
-        await User.findByIdAndUpdate(req.user.id, { kycStatus: 'pending', kycDocument: document });
+        const { document, addressDocument } = req.body; // base64 or URL string
+        if (!document || !addressDocument) return res.status(400).json({ message: 'Both National ID and Proof of Address are required' });
+        await User.findByIdAndUpdate(req.user.id, { kycStatus: 'pending', kycDocument: document, kycAddressDocument: addressDocument });
         res.json({ message: 'KYC submitted for review' });
     } catch { res.status(500).json({ message: 'Server error' }); }
 });
