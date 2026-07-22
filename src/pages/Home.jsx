@@ -646,7 +646,7 @@ function Home() {
               <div className="package-card">
                 <div className="package-header">
                   <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>🌱</span>Starter</h3>
-                  <div className="return-badge" style={{ background: '#10b98120', color: '#10b981' }}>8% Returns</div>
+                  <div className="return-badge" style={{ background: '#10b98120', color: '#10b981' }}>42% Returns</div>
                 </div>
                 <div className="package-price">
                   <span className="amount">$50 - $499</span>
@@ -662,7 +662,7 @@ function Home() {
                 <div className="popular-badge">Most Popular</div>
                 <div className="package-header">
                   <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>⭐</span>Basic</h3>
-                  <div className="return-badge" style={{ background: '#00b0ff20', color: '#00b0ff' }}>10% Returns</div>
+                  <div className="return-badge" style={{ background: '#00b0ff20', color: '#00b0ff' }}>48% Returns</div>
                 </div>
                 <div className="package-price">
                   <span className="amount">$500 - $1,999</span>
@@ -677,7 +677,7 @@ function Home() {
               <div className="package-card">
                 <div className="package-header">
                   <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>🥉</span>Bronze</h3>
-                  <div className="return-badge" style={{ background: '#cd7f3220', color: '#cd7f32' }}>15% Returns</div>
+                  <div className="return-badge" style={{ background: '#cd7f3220', color: '#cd7f32' }}>54% Returns</div>
                 </div>
                 <div className="package-price">
                   <span className="amount">$2,000 - $4,999</span>
@@ -692,7 +692,7 @@ function Home() {
               <div className="package-card">
                 <div className="package-header">
                   <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>🥈</span>Silver</h3>
-                  <div className="return-badge" style={{ background: '#9ca3af20', color: '#9ca3af' }}>20% Returns</div>
+                  <div className="return-badge" style={{ background: '#9ca3af20', color: '#9ca3af' }}>60% Returns</div>
                 </div>
                 <div className="package-price">
                   <span className="amount">$5,000 - $14,999</span>
@@ -707,7 +707,7 @@ function Home() {
               <div className="package-card">
                 <div className="package-header">
                   <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>🥇</span>Gold</h3>
-                  <div className="return-badge" style={{ background: '#f5a62320', color: '#f5a623' }}>25% Returns</div>
+                  <div className="return-badge" style={{ background: '#f5a62320', color: '#f5a623' }}>65% Returns</div>
                 </div>
                 <div className="package-price">
                   <span className="amount">$15,000 - $29,999</span>
@@ -722,7 +722,7 @@ function Home() {
               <div className="package-card premium">
                 <div className="package-header">
                   <h3><span style={{ fontSize: '1.2rem', marginRight: '5px' }}>💎</span>Diamond</h3>
-                  <div className="return-badge" style={{ background: '#818cf820', color: '#818cf8' }}>30% Returns</div>
+                  <div className="return-badge" style={{ background: '#818cf820', color: '#818cf8' }}>70% Returns</div>
                 </div>
                 <div className="package-price">
                   <span className="amount">$30,000 - $100,000</span>
