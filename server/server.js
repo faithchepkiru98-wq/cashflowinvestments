@@ -342,6 +342,7 @@ const verifyAdmin = (req, res, next) => {
 
 // ─── FEATURE 4: Wallet Addresses ─────────────────────────────────────────────
 app.get('/api/wallet-addresses', verifyToken, (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.json(WALLET_ADDRESSES);
 });
 

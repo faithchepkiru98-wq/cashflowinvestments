@@ -263,13 +263,24 @@ function Dashboard() {
     navigate('/');
   };
 
-  const handleInvest = (pkgName) => {
+  const handleInvest = async (pkgName) => {
     setSelectedPackage({ name: pkgName, ...packages[pkgName] });
     setAmount(packages[pkgName].min);
     setTxId('');
     setContactInfo('');
     setPaymentMethod('usdt');
     setIsCheckoutOpen(true);
+    
+    // Refresh wallet addresses when opening modal in case they were updated
+    const token = localStorage.getItem('token');
+    try {
+      const walletRes = await fetch(`${API_URL}/api/wallet-addresses`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (walletRes.ok) setWalletAddresses(await walletRes.json());
+    } catch (e) {
+      console.error('Failed to refresh wallet addresses');
+    }
   };
 
   const handleCheckoutSubmit = async (e) => {
