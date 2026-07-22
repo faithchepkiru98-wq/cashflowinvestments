@@ -327,10 +327,10 @@ const verifyToken = (req, res, next) => {
     if (!token) return res.status(401).json({ message: 'Access denied' });
     try {
         req.user = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-        next();
-    } catch {
-        res.status(400).json({ message: 'Invalid token' });
+    } catch (err) {
+        return res.status(400).json({ message: 'Invalid token' });
     }
+    next();
 };
 
 const verifyAdmin = (req, res, next) => {
