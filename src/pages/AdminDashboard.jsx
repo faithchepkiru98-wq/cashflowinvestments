@@ -341,7 +341,7 @@ function AdminDashboard() {
 
             {/* Table-based tabs: Deposits, Withdrawals, Investments, Users */}
             {activeTab !== 'settings' && (
-            <div style={{ overflowX: 'auto' }}>
+            <div className="table-responsive">
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 {/* ── DEPOSITS ── */}
                 {activeTab === 'deposits' && (<>
