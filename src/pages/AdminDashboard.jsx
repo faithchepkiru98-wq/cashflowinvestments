@@ -621,6 +621,8 @@ function AdminDashboard() {
                   { key: 'supportEmail', label: 'Support Email',         type: 'email',  placeholder: 'support@example.com', envVar: 'SUPPORT_EMAIL' },
                   { key: 'minDeposit',   label: 'Min Deposit (USD)',     type: 'number', placeholder: '200',               envVar: 'MIN_DEPOSIT'   },
                   { key: 'minWithdraw',  label: 'Min Withdrawal (USD)',  type: 'number', placeholder: '50',                envVar: 'MIN_WITHDRAW'  },
+                  { key: 'whatsapp',     label: 'WhatsApp Link',         type: 'text',   placeholder: 'https://wa.me/...', envVar: 'WHATSAPP'      },
+                  { key: 'telegram',     label: 'Telegram Link',         type: 'text',   placeholder: 'https://t.me/...',  envVar: 'TELEGRAM'      },
                 ].map(({ key, label, type, placeholder, envVar }) => (
                   <div key={key} style={{ marginBottom: '18px' }}>
                     <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
@@ -656,6 +658,8 @@ function AdminDashboard() {
                     ['SUPPORT_EMAIL', 'Admin / support email shown to users'],
                     ['MIN_DEPOSIT',   'Minimum deposit in USD'],
                     ['MIN_WITHDRAW',  'Minimum withdrawal in USD'],
+                    ['WHATSAPP',      'WhatsApp Contact Link'],
+                    ['TELEGRAM',      'Telegram Contact Link'],
                   ].map(([name, desc]) => (
                     <div key={name} style={{ background: 'var(--bg-main)', borderRadius: '8px', padding: '10px 14px' }}>
                       <code style={{ color: '#818cf8', fontSize: '0.82rem', fontWeight: '700' }}>{name}</code>

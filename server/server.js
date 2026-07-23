@@ -48,6 +48,8 @@ const platformSettings = {
     minDeposit:   Number(process.env.MIN_DEPOSIT)  || 200,
     minWithdraw:  Number(process.env.MIN_WITHDRAW) || 50,
     supportEmail: process.env.SUPPORT_EMAIL || process.env.EMAIL_USER || '',
+    whatsapp:     process.env.WHATSAPP || '',
+    telegram:     process.env.TELEGRAM || '',
 };
 
 // Keep backward-compat alias used by /api/wallet-addresses
@@ -361,7 +363,7 @@ app.get('/api/admin/settings', verifyAdmin, (req, res) => {
 
 // ─── ADMIN: Update Platform Settings ─────────────────────────────────────────
 app.put('/api/admin/settings', verifyAdmin, (req, res) => {
-    const allowed = ['btc', 'eth', 'usdt', 'bank', 'siteName', 'minDeposit', 'minWithdraw', 'supportEmail'];
+    const allowed = ['btc', 'eth', 'usdt', 'bank', 'siteName', 'minDeposit', 'minWithdraw', 'supportEmail', 'whatsapp', 'telegram'];
     const updates = {};
 
     for (const key of allowed) {
