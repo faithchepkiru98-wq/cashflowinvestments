@@ -318,25 +318,8 @@ function Home() {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
-        
-        if (authModal.type === 'login') {
-          setAuthModal({ isOpen: false, type: 'login' });
-          navigate('/dashboard');
-        } else {
-          try {
-            const walletRes = await fetch(`${API_URL}/api/wallet-addresses`, {
-              headers: { 'Authorization': `Bearer ${data.token}` }
-            });
-            if (walletRes.ok) {
-              const wallets = await walletRes.json();
-              setWalletAddresses(wallets);
-            }
-          } catch (err) {
-            console.error('Failed to fetch wallets');
-          }
-          setMessage('Registration successful! Next: Crypto Deposit.');
-          setAuthModal({ ...authModal, type: 'crypto_deposit' });
-        }
+        setAuthModal({ isOpen: false, type: 'login' });
+        navigate('/dashboard');
       } else if (response.status === 403 && data.requiresVerification) {
         // Unverified user trying to log in
         setVerificationEmail(data.email || email);
