@@ -12,7 +12,7 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],   // don't intercept API calls
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}']
+        globPatterns: []   // disable precaching - avoid glob warnings on Render
       },
       manifest: {
         name: 'Cashflowvest',
