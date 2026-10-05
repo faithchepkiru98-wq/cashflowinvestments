@@ -418,6 +418,34 @@ function Dashboard() {
     navigate('/');
   };
 
+  const handleWithdraw = async (e) => {
+    e.preventDefault();
+    const wAmount = Number(withdrawAmount);
+    if (!wAmount || wAmount < 50) return addToast('Minimum withdrawal is $50', 'error');
+    if (wAmount > dashboardData.user.balance) return addToast('Insufficient balance', 'error');
+    if (!withdrawWallet) return addToast('Please enter your wallet address', 'error');
+    
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/transactions/withdraw`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: wAmount, method: withdrawMethod, txId: withdrawWallet })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        addToast('Withdrawal requested successfully');
+        setWithdrawAmount('');
+        setWithdrawWallet('');
+        fetchDashboardData(token);
+      } else {
+        addToast(data.message || 'Withdrawal failed', 'error');
+      }
+    } catch (err) {
+      addToast('An error occurred during withdrawal', 'error');
+    }
+  };
+
   const handleInvest = async (pkgName) => {
     setSelectedPackage({ name: pkgName, ...packages[pkgName] });
     setAmount(packages[pkgName].min);
@@ -1011,8 +1039,8 @@ function Dashboard() {
                         type="number" 
                         min="50"
                         max={dashboardData.user?.balance || 0}
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={withdrawAmount}
+                        onChange={(e) => setWithdrawAmount(e.target.value)}
                         required
                         placeholder="Min $50"
                         style={{ width: '100%', padding: '16px 0', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '1rem' }}
@@ -1023,8 +1051,8 @@ function Dashboard() {
                   <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Withdrawal Method</label>
                     <select 
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      value={withdrawMethod}
+                      onChange={(e) => setWithdrawMethod(e.target.value)}
                       style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
                       <option value="usdt">USDT (TRC20)</option>
                       <option value="btc">Bitcoin (BEP20)</option>
@@ -1036,10 +1064,10 @@ function Dashboard() {
                     <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Destination Wallet Address</label>
                     <input 
                       type="text" 
-                      value={txId}
-                      onChange={(e) => setTxId(e.target.value)}
+                      value={withdrawWallet}
+                      onChange={(e) => setWithdrawWallet(e.target.value)}
                       required
-                      placeholder={`Enter your ${paymentMethod.toUpperCase()} address`}
+                      placeholder={`Enter your ${withdrawMethod ? withdrawMethod.toUpperCase() : 'USDT'} address`}
                       style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '0.9rem' }}
                     />
                   </div>
