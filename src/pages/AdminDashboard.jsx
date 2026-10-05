@@ -561,19 +561,26 @@ function AdminDashboard() {
                                 ⬇️ Revoke Admin
                               </button>
                             )}
-                            {u.kycStatus === 'pending' && (
+                            {u.kycDocument && (
                               <>
-                                {u.kycDocument && (
-                                  <button onClick={() => setViewingDocument(u.kycDocument)} style={{ background: 'rgba(0,176,255,0.15)', color: '#00b0ff', border: '1px solid #00b0ff', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                                    📄 View ID
+                                <button onClick={() => setViewingDocument(u.kycDocument)} style={{ background: 'rgba(0,176,255,0.15)', color: '#00b0ff', border: '1px solid #00b0ff', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                  📄 View ID
+                                </button>
+                                {u.kycStatus !== 'approved' && (
+                                  <button onClick={() => handleUpdateKyc(u._id, 'approved')} style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid #10b981', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                    ✅ Approve KYC
                                   </button>
                                 )}
-                                <button onClick={() => handleUpdateKyc(u._id, 'approved')} style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid #10b981', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                                  ✅ Approve KYC
-                                </button>
-                                <button onClick={() => handleUpdateKyc(u._id, 'rejected')} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid #ef4444', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                                  ❌ Reject KYC
-                                </button>
+                                {u.kycStatus === 'approved' && (
+                                  <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid #10b981', padding: '5px 10px', borderRadius: '6px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                    ✅ Already Approved
+                                  </span>
+                                )}
+                                {u.kycStatus !== 'rejected' && u.kycStatus !== 'approved' && (
+                                  <button onClick={() => handleUpdateKyc(u._id, 'rejected')} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid #ef4444', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                    ❌ Reject KYC
+                                  </button>
+                                )}
                               </>
                             )}
                           </div>

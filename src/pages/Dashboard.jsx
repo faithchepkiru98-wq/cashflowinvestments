@@ -1,7 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Component } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { LayoutDashboard, TrendingUp, Wallet, ArrowDownCircle, List, LogOut, Bell, ShieldCheck, X, Settings, Users, MessageCircle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+
+// ── Error Boundary ───────────────────────────────────────────────────────────
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error('Dashboard render error:', error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</div>
+          <h3 style={{ color: 'white', marginBottom: '8px' }}>Something went wrong loading this tab</h3>
+          <p style={{ fontSize: '0.85rem', marginBottom: '16px', color: '#ef4444' }}>{this.state.error?.message}</p>
+          <button onClick={() => this.setState({ hasError: false, error: null })} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer' }}>Try Again</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function calcLiveEarnings(inv) {
@@ -628,6 +648,7 @@ function Dashboard() {
         {/* Main Content Area */}
         <main style={{ flex: 1, minWidth: '300px', background: 'rgba(24,24,27,0.6)', backdropFilter: 'blur(16px)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
           <style>{`@keyframes tabFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .tab-content { animation: tabFadeIn 0.25s ease forwards; }`}</style>
+          <ErrorBoundary key={activeTab}>
 
 
           {activeTab === 'overview' && (
@@ -1123,6 +1144,7 @@ function Dashboard() {
           {activeTab === 'settings' && (
             <SettingsTab user={dashboardData.user} token={localStorage.getItem('token')} onUpdate={() => window.location.reload()} addToast={addToast} />
           )}
+          </ErrorBoundary>
         </main>
       </div>
 

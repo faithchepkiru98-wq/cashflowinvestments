@@ -1002,6 +1002,14 @@ app.put('/api/admin/user/:id/kyc', verifyAdmin, async (req, res) => {
     try {
         const { status } = req.body; // 'approved' or 'rejected'
         if (!['approved', 'rejected'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
+
+        // Guard: prevent acting on already-actioned KYC
+        const existingUser = await User.findById(req.params.id);
+        if (!existingUser) return res.status(404).json({ message: 'User not found' });
+        if (existingUser.kycStatus === status) {
+            return res.status(409).json({ message: `KYC already ${status}` });
+        }
+
         const user = await User.findByIdAndUpdate(req.params.id, { kycStatus: status }, { new: true });
         const msg = status === 'approved'
             ? '✅ Your KYC verification has been approved! You can now make large withdrawals.'
