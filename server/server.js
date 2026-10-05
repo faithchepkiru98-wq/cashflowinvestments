@@ -687,6 +687,16 @@ app.get('/api/wallet-addresses', verifyToken, (req, res) => {
     res.json(WALLET_ADDRESSES);
 });
 
+// ─── PUBLIC: Get Public Settings ───────────────────────────────────────────────
+app.get('/api/public/settings', (req, res) => {
+    res.json({
+        siteName: platformSettings.siteName,
+        supportEmail: platformSettings.supportEmail,
+        whatsapp: platformSettings.whatsapp,
+        telegram: platformSettings.telegram,
+    });
+});
+
 // ─── ADMIN: Get Platform Settings ────────────────────────────────────────────
 app.get('/api/admin/settings', verifyAdmin, (req, res) => {
     res.json(platformSettings);

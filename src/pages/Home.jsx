@@ -189,6 +189,7 @@ function Home() {
   const [verificationEmail, setVerificationEmail] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [messageType, setMessageType] = useState('error'); // 'error' | 'success' | 'info'
+  const [publicSettings, setPublicSettings] = useState(null);
   
   const navigate = useNavigate();
 
@@ -245,6 +246,13 @@ function Home() {
       }
     }
     
+    // Fetch public settings
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    fetch(`${API_URL}/api/public/settings`)
+      .then(res => res.json())
+      .then(data => setPublicSettings(data))
+      .catch(err => console.error('Failed to fetch public settings:', err));
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
@@ -1029,7 +1037,13 @@ function Home() {
           </div>
           <div className="footer-col">
             <h4>Contact Us</h4>
-            <p>Email: support@Cashflowvest.space</p>
+            <p>Email: {publicSettings?.supportEmail || 'support@Cashflowvest.space'}</p>
+            {publicSettings?.whatsapp && (
+              <p>WhatsApp: <a href={publicSettings.whatsapp} target="_blank" rel="noopener noreferrer" style={{ color: '#00e676', textDecoration: 'none' }}>Message Us</a></p>
+            )}
+            {publicSettings?.telegram && (
+              <p>Telegram: <a href={publicSettings.telegram.startsWith('http') ? publicSettings.telegram : `https://t.me/${publicSettings.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#00b0ff', textDecoration: 'none' }}>{publicSettings.telegram}</a></p>
+            )}
             <p>Location: New York, USA</p>
           </div>
         </div>
