@@ -100,6 +100,7 @@ function AdminDashboard() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [broadcasts, setBroadcasts] = useState([]);
   const [newBroadcast, setNewBroadcast] = useState({ title: '', message: '', type: 'info' });
+  const [viewingDocument, setViewingDocument] = useState(null);
   const [chatUsers, setChatUsers] = useState([]);
   const [activeChatUserId, setActiveChatUserId] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
@@ -563,9 +564,9 @@ function AdminDashboard() {
                             {u.kycStatus === 'pending' && (
                               <>
                                 {u.kycDocument && (
-                                  <a href={u.kycDocument} target="_blank" rel="noreferrer" style={{ background: 'rgba(0,176,255,0.15)', color: '#00b0ff', border: '1px solid #00b0ff', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap', textDecoration: 'none' }}>
+                                  <button onClick={() => setViewingDocument(u.kycDocument)} style={{ background: 'rgba(0,176,255,0.15)', color: '#00b0ff', border: '1px solid #00b0ff', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                                     📄 View ID
-                                  </a>
+                                  </button>
                                 )}
                                 <button onClick={() => handleUpdateKyc(u._id, 'approved')} style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid #10b981', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                                   ✅ Approve KYC
@@ -839,6 +840,22 @@ function AdminDashboard() {
               <button onClick={() => setEditUser(null)} style={{ flex: 1, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem' }}>
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      {viewingDocument && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }} onClick={() => setViewingDocument(null)}>
+          <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: '15px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: 'white' }}>KYC Document</h3>
+              <button onClick={() => setViewingDocument(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.5rem' }}>&times;</button>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', background: '#000', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {viewingDocument.startsWith('data:image') ? (
+                <img src={viewingDocument} alt="KYC Document" style={{ maxWidth: '100%', objectFit: 'contain' }} />
+              ) : (
+                <iframe src={viewingDocument} style={{ width: '100%', height: '600px', border: 'none' }} title="KYC Document" />
+              )}
             </div>
           </div>
         </div>
