@@ -257,19 +257,20 @@ function Dashboard() {
     }
   }, [chatMessages, isChatOpen]);
 
-  const sendChatMessage = async (e) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
+  const sendChatMessage = async (e, directMessage = null) => {
+    if (e) e.preventDefault();
+    const textToSend = directMessage || chatInput;
+    if (!textToSend.trim()) return;
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_URL}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ text: chatInput })
+      body: JSON.stringify({ text: textToSend })
     });
     if (res.ok) {
       const newMsg = await res.json();
       setChatMessages(prev => [...prev, newMsg]);
-      setChatInput('');
+      if (!directMessage) setChatInput('');
     }
   };
 
@@ -1092,6 +1093,24 @@ function Dashboard() {
                 ))
               )}
               <div ref={chatEndRef} />
+            </div>
+
+            {/* Quick Replies */}
+            <div style={{ padding: '10px 12px', background: 'white', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <style>{`.quick-reply-scroll::-webkit-scrollbar { display: none; }`}</style>
+              <div className="quick-reply-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+                {["How do I deposit?", "What are the investment plans?", "My withdrawal is pending"].map((msg, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => sendChatMessage(null, msg)}
+                    style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#374151', padding: '6px 12px', borderRadius: '16px', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+                  >
+                    {msg}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Input Area */}
