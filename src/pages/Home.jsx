@@ -185,6 +185,8 @@ function Home() {
   const [user, setUser] = useState(null);
   const [walletAddresses, setWalletAddresses] = useState(null);
   const [referredByCode] = useState(() => new URLSearchParams(window.location.search).get('ref') || '');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationEmail, setVerificationEmail] = useState('');
   
   const navigate = useNavigate();
 
@@ -303,16 +305,24 @@ function Home() {
       
       const data = await response.json();
       
-      if (response.ok) {
+      if (response.ok || data.requiresVerification) {
+        // Registration needs email code verification
+        if (data.requiresVerification) {
+          setVerificationEmail(data.email || email);
+          setVerificationCode('');
+          setMessage(data.message || 'Check your email for a 6-digit verification code.');
+          setAuthModal({ ...authModal, type: 'verify_code' });
+          return;
+        }
+
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
         
         if (authModal.type === 'login') {
           setAuthModal({ isOpen: false, type: 'login' });
-          navigate('/dashboard'); // Redirect to dashboard
+          navigate('/dashboard');
         } else {
-          // Fetch wallet addresses for the next step
           try {
             const walletRes = await fetch(`${API_URL}/api/wallet-addresses`, {
               headers: { 'Authorization': `Bearer ${data.token}` }
@@ -327,6 +337,12 @@ function Home() {
           setMessage('Registration successful! Next: Crypto Deposit.');
           setAuthModal({ ...authModal, type: 'crypto_deposit' });
         }
+      } else if (response.status === 403 && data.requiresVerification) {
+        // Unverified user trying to log in
+        setVerificationEmail(data.email || email);
+        setVerificationCode('');
+        setMessage(data.message);
+        setAuthModal({ ...authModal, type: 'verify_code' });
       } else {
         setMessage(data.message || 'An error occurred');
       }
@@ -335,6 +351,50 @@ function Home() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage('');
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verificationEmail, code: verificationCode })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+        setAuthModal({ isOpen: false, type: 'login' });
+        navigate('/dashboard');
+      } else {
+        setMessage(data.message || 'Invalid code. Please try again.');
+      }
+    } catch (error) {
+      setMessage('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setIsLoading(true);
+    setMessage('');
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/auth/resend-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verificationEmail })
+      });
+      const data = await response.json();
+      setMessage(data.message || 'Code resent!');
+    } catch { setMessage('Failed to resend. Please try again.'); }
+    finally { setIsLoading(false); }
   };
 
   const handleInvestClick = (e, packageName) => {
@@ -441,7 +501,7 @@ function Home() {
               }}
             >&times;</button>
             <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>
-              {authModal.type === 'login' ? 'Welcome Back' : authModal.type === 'crypto_deposit' ? 'Crypto Deposit' : 'Create Account'}
+              {authModal.type === 'login' ? 'Welcome Back' : authModal.type === 'crypto_deposit' ? 'Crypto Deposit' : authModal.type === 'verify_code' ? 'Verify Your Email' : 'Create Account'}
             </h2>
             
             {message && (
@@ -458,7 +518,47 @@ function Home() {
               </div>
             )}
 
-            {authModal.type === 'crypto_deposit' ? (
+            {authModal.type === 'verify_code' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,230,118,0.06)', borderRadius: '10px', border: '1px solid rgba(0,230,118,0.15)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '6px' }}>📧</div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.6' }}>
+                    A 6-digit code was sent to<br />
+                    <strong style={{ color: 'white' }}>{verificationEmail}</strong>
+                  </p>
+                </div>
+                <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Verification Code</label>
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="Enter 6-digit code"
+                      maxLength={6}
+                      required
+                      autoFocus
+                      style={{
+                        width: '100%', padding: '14px', borderRadius: '8px',
+                        background: 'var(--bg-main)', border: '1px solid var(--border-color)',
+                        color: 'white', outline: 'none', fontSize: '1.4rem',
+                        textAlign: 'center', letterSpacing: '10px', fontFamily: 'monospace'
+                      }}
+                    />
+                  </div>
+                  <button type="submit" disabled={isLoading || verificationCode.length < 6} className="btn btn-primary btn-block">
+                    {isLoading ? 'Verifying...' : 'Verify & Continue'}
+                  </button>
+                </form>
+                <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Didn't receive the code?{' '}
+                  <a href="#" onClick={(e) => { e.preventDefault(); handleResendCode(); }}
+                    style={{ color: 'var(--accent-blue)', cursor: 'pointer' }}>
+                    {isLoading ? 'Sending...' : 'Resend Code'}
+                  </a>
+                </div>
+              </div>
+            ) : authModal.type === 'crypto_deposit' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', color: 'var(--text-secondary)' }}>
                 <p style={{ textAlign: 'center', marginBottom: '10px' }}>To activate your account and start investing, please make a deposit to one of the following addresses:</p>
                 {walletAddresses && (

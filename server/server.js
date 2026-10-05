@@ -64,7 +64,9 @@ const userSchema = new mongoose.Schema({
     balance:             { type: Number, default: 0 },
     profit:              { type: Number, default: 0 },
     role:                { type: String, default: 'user' },
-    isVerified:          { type: Boolean, default: true },
+    isVerified:          { type: Boolean, default: false },
+    verificationCode:    { type: String },
+    verificationCodeExpiry: { type: Date },
     verificationToken:   { type: String },
     resetPasswordToken:  { type: String },
     resetPasswordExpiry: { type: Date },
@@ -310,6 +312,7 @@ app.post('/api/auth/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
         const verificationToken = crypto.randomBytes(32).toString('hex');
 
         const newUser = new User({
@@ -317,37 +320,32 @@ app.post('/api/auth/register', async (req, res) => {
             phone,
             email,
             password: hashedPassword,
+            verificationCode,
+            verificationCodeExpiry: new Date(Date.now() + 15 * 60 * 1000), // 15 mins
             verificationToken,
-            isVerified: true,
+            isVerified: false,
             referralCode: generateReferralCode(),
             referredBy: referredById
         });
 
         await newUser.save();
 
-        const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify?token=${verificationToken}`;
-        const emailSent = await sendEmail(email, 'Welcome to Cashflowvest!', `
-            <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
-              <h1 style="color:#00e676;">Welcome, ${name}!</h1>
-              <p>Thank you for joining Cashflowvest. We are excited to have you on board.</p>
-              <p>Your unique referral code is: <strong style="color:#f5a623;font-size:1.2rem;">${newUser.referralCode}</strong></p>
-              <p>Share this code with your friends and earn bonuses!</p>
-              <p>Click the button below to verify your email and activate your account.</p>
-              <a href="${verifyUrl}" style="display:inline-block;background:linear-gradient(135deg,#00e676,#00b0ff);color:#131722;font-weight:bold;padding:14px 28px;border-radius:8px;text-decoration:none;margin:20px 0;">Verify My Account</a>
-              <p style="color:#9ca3af;font-size:0.85rem;">This link expires in 24 hours. If you didn't sign up, ignore this email.</p>
+        await sendEmail(email, 'Your Cashflowvest Verification Code', `
+            <div style="font-family:sans-serif;max-width:540px;margin:auto;background:#131722;color:#f3f4f6;padding:36px;border-radius:12px;border:1px solid rgba(0,230,118,0.2);">
+                <h1 style="color:#00e676;font-size:1.6rem;margin-bottom:8px;">Welcome, ${name}!</h1>
+                <p style="color:#9ca3af;font-size:0.95rem;line-height:1.6;">Thank you for registering with Cashflowvest. Please use the 6-digit verification code below to activate your account:</p>
+                <div style="background:#0a0c10;border:1px dashed #00e676;border-radius:10px;padding:24px;text-align:center;margin:24px 0;">
+                    <div style="font-size:2.5rem;font-weight:bold;letter-spacing:10px;color:#00e676;font-family:monospace;">${verificationCode}</div>
+                    <div style="color:#6b7280;font-size:0.8rem;margin-top:6px;">Valid for 15 minutes</div>
+                </div>
+                <p style="color:#9ca3af;font-size:0.85rem;">If you did not sign up for an account, please ignore this email.</p>
             </div>
         `);
 
-        const token = jwt.sign(
-            { id: newUser._id, role: newUser.role },
-            process.env.JWT_SECRET || 'fallback_secret',
-            { expiresIn: '7d' }
-        );
-
         res.status(201).json({
-            message: 'Registration successful! Proceed to deposit.',
-            token,
-            user: { id: newUser._id, name: newUser.name, phone: newUser.phone, email: newUser.email, role: newUser.role, referralCode: newUser.referralCode }
+            message: 'Verification code sent to your email. Please enter the code below to complete registration.',
+            requiresVerification: true,
+            email: newUser.email
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -359,7 +357,97 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// Verify email token
+// Verify 6-digit email code
+app.post('/api/auth/verify-code', async (req, res) => {
+    try {
+        let { email, code } = req.body;
+        if (!email || !code) {
+            return res.status(400).json({ message: 'Email and verification code are required' });
+        }
+        email = email.toString().trim().toLowerCase();
+        code = code.toString().trim();
+
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (user.isVerified) {
+            const token = jwt.sign(
+                { id: user._id, role: user.role },
+                process.env.JWT_SECRET || 'fallback_secret',
+                { expiresIn: '7d' }
+            );
+            return res.json({
+                message: 'Account is already verified!',
+                token,
+                user: { id: user._id, name: user.name, phone: user.phone, email: user.email, role: user.role, referralCode: user.referralCode }
+            });
+        }
+
+        if (!user.verificationCode || user.verificationCode !== code) {
+            return res.status(400).json({ message: 'Invalid verification code. Please check your email and try again.' });
+        }
+
+        if (user.verificationCodeExpiry && user.verificationCodeExpiry < new Date()) {
+            return res.status(400).json({ message: 'Verification code has expired. Please click "Resend Code".' });
+        }
+
+        user.isVerified = true;
+        user.verificationCode = undefined;
+        user.verificationCodeExpiry = undefined;
+        await user.save();
+
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            message: 'Email verified successfully! Welcome to Cashflowvest.',
+            token,
+            user: { id: user._id, name: user.name, phone: user.phone, email: user.email, role: user.role, referralCode: user.referralCode }
+        });
+    } catch (error) {
+        console.error('Verification code error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Resend 6-digit email code
+app.post('/api/auth/resend-code', async (req, res) => {
+    try {
+        let { email } = req.body;
+        if (!email) return res.status(400).json({ message: 'Email is required' });
+        email = email.toString().trim().toLowerCase();
+
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (user.isVerified) return res.status(400).json({ message: 'Account is already verified' });
+
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        user.verificationCode = verificationCode;
+        user.verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+        await user.save();
+
+        await sendEmail(email, 'Your Cashflowvest Verification Code', `
+            <div style="font-family:sans-serif;max-width:540px;margin:auto;background:#131722;color:#f3f4f6;padding:36px;border-radius:12px;border:1px solid rgba(0,230,118,0.2);">
+                <h1 style="color:#00e676;font-size:1.6rem;margin-bottom:8px;">New Verification Code</h1>
+                <p style="color:#9ca3af;font-size:0.95rem;line-height:1.6;">Here is your new 6-digit verification code:</p>
+                <div style="background:#0a0c10;border:1px dashed #00e676;border-radius:10px;padding:24px;text-align:center;margin:24px 0;">
+                    <div style="font-size:2.5rem;font-weight:bold;letter-spacing:10px;color:#00e676;font-family:monospace;">${verificationCode}</div>
+                    <div style="color:#6b7280;font-size:0.8rem;margin-top:6px;">Valid for 15 minutes</div>
+                </div>
+            </div>
+        `);
+
+        res.json({ message: 'A new 6-digit code has been sent to your email.' });
+    } catch (error) {
+        console.error('Resend code error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Verify email token (link fallback)
 app.get('/api/auth/verify', async (req, res) => {
     try {
         const { token } = req.query;
@@ -405,7 +493,11 @@ app.post('/api/auth/login', async (req, res) => {
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
         if (!user.isVerified) {
-            return res.status(403).json({ message: 'Please verify your email before logging in. Check your inbox.' });
+            return res.status(403).json({ 
+                message: 'Please enter the verification code sent to your email to activate your account.',
+                requiresVerification: true,
+                email: user.email
+            });
         }
 
         const token = jwt.sign(
