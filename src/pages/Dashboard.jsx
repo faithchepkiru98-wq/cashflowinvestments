@@ -561,7 +561,7 @@ function Dashboard() {
       <div className="container" style={{ display: 'flex', flex: 1, padding: '40px 20px', gap: '30px', flexWrap: 'wrap' }}>
         
         {/* Sidebar */}
-        <aside style={{ width: '100%', maxWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+        <aside style={{ width: '100%', maxWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0, overflowY: 'auto', maxHeight: 'calc(100vh - 120px)' }}>
           {[
             { key: 'overview',     label: 'Overview',       icon: LayoutDashboard,    color: '#00e676' },
             { key: 'invest',       label: 'New Investment', icon: TrendingUp,          color: '#00b0ff' },
@@ -569,6 +569,7 @@ function Dashboard() {
             { key: 'transactions', label: 'Transactions',   icon: List,                color: '#818cf8' },
             { key: 'withdraw',     label: 'Withdraw Funds', icon: ArrowDownCircle,     color: '#ef4444' },
             { key: 'referrals',    label: 'My Referrals',   icon: Users,               color: '#a78bfa' },
+            { key: 'kyc',          label: 'KYC Verify',     icon: ShieldCheck,         color: '#06b6d4' },
             { key: 'settings',     label: 'Settings',       icon: Settings,            color: '#94a3b8' },
           ].map(({ key, label, icon: Icon, color }) => (
             <button
@@ -684,38 +685,25 @@ function Dashboard() {
                 ) : null;
               })()}
 
-              {/* KYC Card */}
+              {/* KYC inline banner (overview) — click goes to dedicated tab */}
               {(() => {
                 const kycStatus = dashboardData.user?.kycStatus || 'none';
                 const kycColor = { none: '#9ca3af', pending: '#f5a623', approved: '#00e676', rejected: '#ef4444' }[kycStatus];
                 return (
-                  <div style={{ background: 'var(--bg-main)', padding: '20px', borderRadius: '12px', border: `1px solid ${kycColor}40`, marginBottom: '30px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <ShieldCheck size={28} color={kycColor} />
-                        <div>
-                          <h3 style={{ margin: 0, fontSize: '1rem' }}>KYC Verification</h3>
-                          <p style={{ margin: 0, fontSize: '0.8rem', color: kycColor, fontWeight: '600', textTransform: 'capitalize' }}>{kycStatus === 'none' ? 'Not submitted' : kycStatus}</p>
-                        </div>
-                      </div>
-                      {(kycStatus === 'none' || kycStatus === 'rejected') && (
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <input type="file" accept="image/*,.pdf" id="kyc-file" style={{ display: 'none' }} onChange={e => setKycFile(e.target.files[0])} />
-                          <label htmlFor="kyc-file" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                            {kycFile ? kycFile.name : '📎 National ID'}
-                          </label>
-                          <input type="file" accept="image/*,.pdf" id="kyc-address" style={{ display: 'none' }} onChange={e => setKycAddressFile(e.target.files[0])} />
-                          <label htmlFor="kyc-address" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                            {kycAddressFile ? kycAddressFile.name : '📎 Proof of Address'}
-                          </label>
-                          {(kycFile && kycAddressFile) && (
-                            <button onClick={submitKyc} disabled={kycSubmitting} style={{ background: '#00e676', color: '#131722', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem' }}>
-                              {kycSubmitting ? 'Submitting...' : 'Submit for Verification'}
-                            </button>
-                          )}
-                        </div>
-                      )}
+                  <div
+                    onClick={() => setActiveTab('kyc')}
+                    style={{ background: 'var(--bg-main)', padding: '16px 20px', borderRadius: '12px', border: `1px solid ${kycColor}40`, marginBottom: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = kycColor}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = `${kycColor}40`}
+                  >
+                    <ShieldCheck size={26} color={kycColor} />
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ margin: 0, fontSize: '0.95rem' }}>KYC Verification</h3>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: kycColor, fontWeight: '600', textTransform: 'capitalize' }}>
+                        {kycStatus === 'none' ? 'Not submitted — click to verify' : kycStatus === 'pending' ? 'Under review' : kycStatus}
+                      </p>
                     </div>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>›</span>
                   </div>
                 );
               })()}
@@ -951,6 +939,89 @@ function Dashboard() {
           )}
 
           {/* ── SUPPORT WIDGET IS NOW FLOATING, NOT A TAB ── */}
+
+          {/* ── KYC TAB ── */}
+          {activeTab === 'kyc' && (() => {
+            const kycStatus = dashboardData.user?.kycStatus || 'none';
+            const kycColor = { none: '#06b6d4', pending: '#f5a623', approved: '#00e676', rejected: '#ef4444' }[kycStatus];
+            return (
+              <div className="tab-content">
+                <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif' }}>🛡️ KYC Verification</h2>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '28px', fontSize: '0.9rem' }}>
+                  Submit your identity documents to unlock full withdrawal access.
+                </p>
+
+                {/* Status Banner */}
+                <div style={{ background: `${kycColor}10`, border: `1px solid ${kycColor}40`, borderRadius: '14px', padding: '20px 24px', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: `${kycColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ShieldCheck size={24} color={kycColor} />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: '700', fontSize: '1rem', color: kycColor, textTransform: 'capitalize' }}>
+                      {kycStatus === 'none' ? 'Not Submitted' : kycStatus === 'pending' ? 'Under Review' : kycStatus === 'approved' ? 'Verified ✓' : 'Rejected — Please Resubmit'}
+                    </p>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                      {kycStatus === 'none' && 'Upload your National ID and Proof of Address below to get verified.'}
+                      {kycStatus === 'pending' && 'Your documents are being reviewed. This usually takes 24–48 hours.'}
+                      {kycStatus === 'approved' && 'You are fully verified. All withdrawal limits are unlocked.'}
+                      {kycStatus === 'rejected' && 'Your submission was rejected. Please upload clearer documents and try again.'}
+                    </p>
+                  </div>
+                </div>
+
+                {(kycStatus === 'none' || kycStatus === 'rejected') && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+                    {/* National ID Card */}
+                    <label htmlFor="kyc-file-tab" style={{ cursor: 'pointer' }}>
+                      <div style={{ background: 'var(--bg-main)', border: `2px dashed ${kycFile ? '#00e676' : 'rgba(255,255,255,0.15)'}`, borderRadius: '16px', padding: '32px 20px', textAlign: 'center', transition: 'border-color 0.2s' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>{kycFile ? '✅' : '🪪'}</div>
+                        <p style={{ fontWeight: '700', marginBottom: '6px' }}>National ID / Passport</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '0 0 14px' }}>JPG, PNG or PDF · Max 5MB</p>
+                        {kycFile ? (
+                          <p style={{ color: '#00e676', fontSize: '0.85rem', fontWeight: '600', wordBreak: 'break-all' }}>{kycFile.name}</p>
+                        ) : (
+                          <span style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4', padding: '8px 18px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600' }}>Choose File</span>
+                        )}
+                      </div>
+                      <input type="file" id="kyc-file-tab" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setKycFile(e.target.files[0])} />
+                    </label>
+
+                    {/* Proof of Address Card */}
+                    <label htmlFor="kyc-address-tab" style={{ cursor: 'pointer' }}>
+                      <div style={{ background: 'var(--bg-main)', border: `2px dashed ${kycAddressFile ? '#00e676' : 'rgba(255,255,255,0.15)'}`, borderRadius: '16px', padding: '32px 20px', textAlign: 'center', transition: 'border-color 0.2s' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>{kycAddressFile ? '✅' : '🏠'}</div>
+                        <p style={{ fontWeight: '700', marginBottom: '6px' }}>Proof of Address</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '0 0 14px' }}>Utility bill or bank statement</p>
+                        {kycAddressFile ? (
+                          <p style={{ color: '#00e676', fontSize: '0.85rem', fontWeight: '600', wordBreak: 'break-all' }}>{kycAddressFile.name}</p>
+                        ) : (
+                          <span style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4', padding: '8px 18px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600' }}>Choose File</span>
+                        )}
+                      </div>
+                      <input type="file" id="kyc-address-tab" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setKycAddressFile(e.target.files[0])} />
+                    </label>
+                  </div>
+                )}
+
+                {(kycStatus === 'none' || kycStatus === 'rejected') && (
+                  <button
+                    onClick={submitKyc}
+                    disabled={!kycFile || !kycAddressFile || kycSubmitting}
+                    style={{
+                      width: '100%', background: (kycFile && kycAddressFile) ? 'linear-gradient(135deg, #06b6d4, #0891b2)' : 'rgba(255,255,255,0.05)',
+                      color: (kycFile && kycAddressFile) ? 'white' : 'var(--text-secondary)',
+                      border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '700', fontSize: '1rem',
+                      cursor: (kycFile && kycAddressFile) ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s', fontFamily: 'Outfit, sans-serif',
+                      boxShadow: (kycFile && kycAddressFile) ? '0 4px 20px rgba(6,182,212,0.3)' : 'none'
+                    }}
+                  >
+                    {kycSubmitting ? '⏳ Submitting...' : (!kycFile || !kycAddressFile) ? 'Upload Both Documents to Continue' : '🛡️ Submit for Verification'}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── REFERRALS TAB ── */}
           {activeTab === 'referrals' && (
