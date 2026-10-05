@@ -55,6 +55,22 @@ const platformSettings = {
 // Keep backward-compat alias used by /api/wallet-addresses
 const WALLET_ADDRESSES = platformSettings;
 
+// ─── PLATFORM SETTING MODEL ───────────────────────────────────────────────────
+const platformSettingSchema = new mongoose.Schema({
+    isSingleton: { type: Boolean, default: true, unique: true },
+    btc: String,
+    eth: String,
+    usdt: String,
+    bank: String,
+    siteName: String,
+    minDeposit: Number,
+    minWithdraw: Number,
+    supportEmail: String,
+    whatsapp: String,
+    telegram: String
+});
+const PlatformSetting = mongoose.model('PlatformSetting', platformSettingSchema);
+
 // ─── MODELS ──────────────────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
     name:                { type: String },
@@ -677,7 +693,7 @@ app.get('/api/admin/settings', verifyAdmin, (req, res) => {
 });
 
 // ─── ADMIN: Update Platform Settings ─────────────────────────────────────────
-app.put('/api/admin/settings', verifyAdmin, (req, res) => {
+app.put('/api/admin/settings', verifyAdmin, async (req, res) => {
     const allowed = ['btc', 'eth', 'usdt', 'bank', 'siteName', 'minDeposit', 'minWithdraw', 'supportEmail', 'whatsapp', 'telegram'];
     const updates = {};
 
@@ -694,8 +710,18 @@ app.put('/api/admin/settings', verifyAdmin, (req, res) => {
         return res.status(400).json({ message: 'No valid fields provided.' });
     }
 
-    console.log('[Admin Settings Updated]', updates);
-    res.json({ message: 'Settings updated successfully.', settings: platformSettings });
+    try {
+        await PlatformSetting.findOneAndUpdate(
+            { isSingleton: true },
+            { $set: updates },
+            { upsert: true, new: true }
+        );
+        console.log('[Admin Settings Updated]', updates);
+        res.json({ message: 'Settings updated successfully.', settings: platformSettings });
+    } catch (err) {
+        console.error('Failed to save settings to DB:', err);
+        res.status(500).json({ message: 'Failed to save settings.' });
+    }
 });
 
 // ─── USER DASHBOARD ───────────────────────────────────────────────────────────
@@ -1050,4 +1076,19 @@ app.post('/api/admin/chat/:userId', verifyAdmin, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Load settings from DB before listening
+PlatformSetting.findOne({ isSingleton: true }).then(settings => {
+    if (settings) {
+        const allowed = ['btc', 'eth', 'usdt', 'bank', 'siteName', 'minDeposit', 'minWithdraw', 'supportEmail', 'whatsapp', 'telegram'];
+        for (const key of allowed) {
+            if (settings[key] !== undefined) {
+                platformSettings[key] = settings[key];
+            }
+        }
+        console.log('[Settings Loaded from DB]');
+    }
+}).catch(err => console.error('Failed to load settings from DB:', err))
+  .finally(() => {
+      app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  });
