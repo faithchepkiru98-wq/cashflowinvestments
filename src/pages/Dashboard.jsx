@@ -200,6 +200,7 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [dashboardData, setDashboardData] = useState({ user: null, investments: [], transactions: [] });
   const [isLoading, setIsLoading] = useState(true);
+  const [slowLoad, setSlowLoad] = useState(false);
   
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -258,34 +259,26 @@ function Dashboard() {
     
     setUser(JSON.parse(savedUser));
     fetchDashboardData(token);
-    
-    // Check if we came from "Invest Now" button on Home page
-    if (location.state && location.state.selectedPackage) {
-      handleInvest(location.state.selectedPackage);
-      // Clear the state so it doesn't reopen on refresh
-      window.history.replaceState({}, document.title)
-    }
+
+    // Show "waking up server" message if loading takes > 5 seconds
+    const slowTimer = setTimeout(() => setSlowLoad(true), 5000);
+    return () => clearTimeout(slowTimer);
   }, [navigate, location]);
 
   const fetchDashboardData = async (token) => {
     try {
-      const response = await fetch(`${API_URL}/api/user/dashboard`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data);
-      }
-      const walletRes = await fetch(`${API_URL}/api/wallet-addresses`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      // Fire all requests in parallel for faster loading
+      const [response, walletRes, nRes, bRes] = await Promise.all([
+        fetch(`${API_URL}/api/user/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/wallet-addresses`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/notifications`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/broadcasts`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      ]);
+      if (response.ok) setDashboardData(await response.json());
       if (walletRes.ok) setWalletAddresses(await walletRes.json());
-
-      // Fetch notifications & broadcasts
-      const nRes = await fetch(`${API_URL}/api/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (nRes.ok) setNotifications(await nRes.json());
-      const bRes = await fetch(`${API_URL}/api/broadcasts`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (bRes.ok) setBroadcasts(await bRes.json());
+      setSlowLoad(false);
     } catch (error) {
       console.error('Failed to fetch dashboard data', error);
     } finally {
@@ -538,6 +531,13 @@ function Dashboard() {
           <div style={{ width: '140px', height: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite' }} />
         </div>
       </header>
+      {slowLoad && (
+        <div style={{ textAlign: 'center', padding: '18px', background: 'rgba(245,166,35,0.08)', borderBottom: '1px solid rgba(245,166,35,0.2)' }}>
+          <p style={{ color: '#f5a623', fontSize: '0.9rem', margin: 0 }}>
+            ⏳ Waking up the server — this can take up to 60 seconds on first load. Please wait…
+          </p>
+        </div>
+      )}
       <div className="container" style={{ display: 'flex', flex: 1, marginTop: '80px', paddingBottom: '40px', gap: '30px' }}>
         <aside style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {[1,2,3,4,5,6,7].map(i => (

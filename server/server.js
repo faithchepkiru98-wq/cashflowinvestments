@@ -1171,5 +1171,19 @@ PlatformSetting.findOne({ isSingleton: true }).then(settings => {
           // Run immediately on startup, then every 2 minutes
           autoCompleteInvestments();
           setInterval(autoCompleteInvestments, 2 * 60 * 1000);
+
+          // ── Keep-alive ping (prevents Render free tier cold starts) ──────
+          // Pings own health endpoint every 14 minutes to stay warm.
+          const SELF_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+          setInterval(async () => {
+              try {
+                  const https = await import('https');
+                  const http  = await import('http');
+                  const mod   = SELF_URL.startsWith('https') ? https : http;
+                  mod.default.get(`${SELF_URL}/api/health`, (res) => {
+                      console.log(`[KeepAlive] ping → ${res.statusCode}`);
+                  }).on('error', (e) => console.warn('[KeepAlive] ping failed:', e.message));
+              } catch {}
+          }, 14 * 60 * 1000); // every 14 minutes
       });
   });
