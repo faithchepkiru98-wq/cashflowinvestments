@@ -201,6 +201,7 @@ function Dashboard() {
   const [dashboardData, setDashboardData] = useState({ user: null, investments: [], transactions: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [slowLoad, setSlowLoad] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -461,6 +462,8 @@ function Dashboard() {
 
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // prevent double-submit
+    setIsSubmitting(true);
     const token = localStorage.getItem('token');
     
     try {
@@ -491,6 +494,8 @@ function Dashboard() {
       }
     } catch (error) {
       addToast('Network error during checkout', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1323,17 +1328,18 @@ function Dashboard() {
                 </div>
               </div>
 
-              <button type="submit" style={{ 
-                width: '100%', background: 'linear-gradient(135deg, #f5a623, #e09614)', color: '#09090b', 
+              <button type="submit" disabled={isSubmitting} style={{ 
+                width: '100%', background: isSubmitting ? 'rgba(245,166,35,0.5)' : 'linear-gradient(135deg, #f5a623, #e09614)', color: '#09090b', 
                 fontWeight: '800', fontSize: '1.05rem', padding: '18px', 
-                border: 'none', borderRadius: '14px', cursor: 'pointer',
+                border: 'none', borderRadius: '14px', cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 fontFamily: 'Outfit, sans-serif',
-                boxShadow: '0 6px 24px rgba(245,166,35,0.25)', transition: 'all 0.2s'
+                boxShadow: '0 6px 24px rgba(245,166,35,0.25)', transition: 'all 0.2s',
+                opacity: isSubmitting ? 0.7 : 1
               }}
-              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(245,166,35,0.4)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseEnter={e => { if (!isSubmitting) { e.currentTarget.style.boxShadow = '0 8px 32px rgba(245,166,35,0.4)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}}
               onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(245,166,35,0.25)'; e.currentTarget.style.transform = 'translateY(0)'; }}
               >
-                Submit Payment Proof ✅
+                {isSubmitting ? '⏳ Submitting...' : 'Submit Payment Proof ✅'}
               </button>
             </form>
           </div>

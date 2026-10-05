@@ -752,9 +752,17 @@ app.post('/api/invest', verifyToken, async (req, res) => {
     try {
         const { package: pkgName, amount, expectedReturn, paymentMethod, txId, contactInfo } = req.body;
 
+        // ── Duplicate check: reject if same txId already submitted ────────────
+        if (txId) {
+            const existing = await Transaction.findOne({ userId: req.user.id, txId: txId.trim() });
+            if (existing) {
+                return res.status(409).json({ message: 'This transaction ID has already been submitted. Please check your investments or contact support.' });
+            }
+        }
+
         const returnPct  = parseFloat(expectedReturn) / 100;
         const returnAmt  = parseFloat(amount) * (1 + returnPct);
-        const durationHrs = PACKAGE_DURATIONS[pkgName] || 6;
+        const durationHrs = PACKAGE_DURATIONS[pkgName] || 120;
         const endsAt     = new Date(Date.now() + durationHrs * 60 * 60 * 1000);
 
         const transaction = new Transaction({
