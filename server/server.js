@@ -1103,6 +1103,56 @@ app.post('/api/admin/chat/:userId', verifyAdmin, async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
+// ─── AUTO-COMPLETE MATURED INVESTMENTS ───────────────────────────────────────
+// Runs every 2 minutes. When an investment's endsAt has passed and it's still
+// 'active', credit the full return to the user and mark it completed.
+async function autoCompleteInvestments() {
+    try {
+        const matured = await Investment.find({
+            status: 'active',
+            endsAt: { $lt: new Date() }
+        });
+
+        for (const inv of matured) {
+            const returnPct    = parseFloat(inv.expectedReturn) / 100;
+            const totalReturn  = inv.amount * (1 + returnPct); // principal + profit
+            const profitAmount = inv.amount * returnPct;
+
+            inv.status = 'completed';
+            await inv.save();
+
+            await User.findByIdAndUpdate(inv.userId, { $inc: { balance: totalReturn } });
+
+            await notify(inv.userId,
+                `🎉 Your ${inv.package} investment of $${inv.amount} has matured! $${totalReturn.toFixed(2)} credited to your balance.`,
+                'success'
+            );
+
+            const user = await User.findById(inv.userId);
+            if (user) {
+                sendEmail(user.email, 'Investment Matured! 🎉 - Cashflowvest', `
+                    <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
+                      <h1 style="color:#00e676;">Investment Matured! 🎉</h1>
+                      <p>Your <strong>${inv.package}</strong> investment has completed.</p>
+                      <p>Principal: <strong>$${inv.amount}</strong><br/>
+                         Profit: <strong>+$${profitAmount.toFixed(2)}</strong><br/>
+                         Total credited: <strong>$${totalReturn.toFixed(2)}</strong></p>
+                      <p style="color:#9ca3af;">Login to your dashboard to reinvest or withdraw your funds.</p>
+                    </div>`
+                );
+            }
+
+            console.log(`[AutoComplete] Investment ${inv._id} completed for user ${inv.userId} — $${totalReturn.toFixed(2)} credited.`);
+        }
+
+        if (matured.length > 0) {
+            console.log(`[AutoComplete] Processed ${matured.length} matured investment(s).`);
+        }
+    } catch (err) {
+        console.error('[AutoComplete] Error:', err.message);
+    }
+}
+
 // Load settings from DB before listening
 PlatformSetting.findOne({ isSingleton: true }).then(settings => {
     if (settings) {
@@ -1116,5 +1166,10 @@ PlatformSetting.findOne({ isSingleton: true }).then(settings => {
     }
 }).catch(err => console.error('Failed to load settings from DB:', err))
   .finally(() => {
-      app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+      app.listen(PORT, () => {
+          console.log(`Server running on port ${PORT}`);
+          // Run immediately on startup, then every 2 minutes
+          autoCompleteInvestments();
+          setInterval(autoCompleteInvestments, 2 * 60 * 1000);
+      });
   });
