@@ -1006,6 +1006,13 @@ app.put('/api/admin/user/:id/kyc', verifyAdmin, async (req, res) => {
             ? '✅ Your KYC verification has been approved! You can now make large withdrawals.'
             : '❌ Your KYC verification was rejected. Please resubmit with a clearer document.';
         await notify(user._id, msg, status === 'approved' ? 'success' : 'error');
+        
+        const emailSubject = status === 'approved' ? 'KYC Verification Approved' : 'KYC Verification Rejected';
+        const emailBody = status === 'approved' 
+            ? 'Great news! Your KYC documents have been reviewed and approved. All withdrawal limits on your account have been removed.'
+            : 'Unfortunately, your recent KYC submission was rejected. Please log in to your dashboard and re-upload clearer copies of your National ID and Proof of Address.';
+        await sendEmail(user.email, emailSubject, emailBody);
+
         res.json({ message: `KYC ${status}`, user });
     } catch { res.status(500).json({ message: 'Server error' }); }
 });

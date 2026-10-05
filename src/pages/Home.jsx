@@ -993,6 +993,37 @@ function Home() {
           </div>
         </section>
 
+        {/* FAQ Section */}
+        <section className="section animate-on-scroll">
+          <div className="container">
+            <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+              <span className="badge">Knowledge Base</span>
+              <h2 className="section-title">Frequently Asked <span className="text-gradient">Questions</span></h2>
+              <p className="section-desc">Got questions? We've got answers.</p>
+            </div>
+            
+            <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { q: "How do I start investing?", a: "Create an account, complete your profile, and make a deposit using any of our supported cryptocurrencies. Once your balance is funded, you can select an investment package and start earning immediately." },
+                { q: "What is the minimum withdrawal amount?", a: "The minimum withdrawal amount is $50. You can request a withdrawal at any time once your available balance reaches this threshold." },
+                { q: "How long do withdrawals take?", a: "Withdrawals are typically processed within 24 hours. For users who have completed KYC verification, withdrawals are often processed much faster." },
+                { q: "Is KYC verification mandatory?", a: "KYC is not strictly mandatory for small deposits and earnings, but it is highly recommended and required to unlock full withdrawal limits and faster processing times." },
+                { q: "What happens if I lose my password?", a: "You can use the 'Forgot Password' link on the login page to securely reset your password via the email address registered to your account." }
+              ].map((faq, idx) => (
+                <div key={idx} style={{ background: 'rgba(24,24,27,0.7)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '24px 28px' }}>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '1.15rem', color: 'white', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <span style={{ color: '#00e676', fontSize: '1.4rem', lineHeight: 1 }}>Q.</span>
+                    {faq.q}
+                  </h3>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: '1.6', paddingLeft: '32px', fontSize: '0.95rem' }}>
+                    {faq.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="cta-section section">
           <div className="container">
             <div className="cta-banner">

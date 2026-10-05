@@ -477,16 +477,30 @@ function Dashboard() {
     }
   };
 
-  if (!user) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '20px' }}>
-      <div style={{
-        width: '56px', height: '56px',
-        border: '3px solid rgba(0,230,118,0.1)',
-        borderTop: '3px solid #00e676',
-        borderRadius: '50%',
-        animation: 'spin 0.8s linear infinite'
-      }} />
-      <p style={{ color: 'var(--text-secondary)', fontFamily: 'Outfit, sans-serif', letterSpacing: '0.05em' }}>Loading your dashboard…</p>
+  if (!user || isLoading) return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
+      <header className="navbar" style={{ background: 'rgba(9, 9, 11, 0.95)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '15px 0' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ width: '180px', height: '32px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite' }} />
+          <div style={{ width: '140px', height: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite' }} />
+        </div>
+      </header>
+      <div className="container" style={{ display: 'flex', flex: 1, padding: '40px 20px', gap: '30px' }}>
+        <aside style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[1,2,3,4,5,6,7].map(i => (
+            <div key={i} style={{ height: '48px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', animation: 'pulse 1.5s infinite', animationDelay: `${i * 0.1}s` }} />
+          ))}
+        </aside>
+        <main style={{ flex: 1, background: 'rgba(24,24,27,0.6)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ width: '250px', height: '36px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '30px', animation: 'pulse 1.5s infinite' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
+            {[1,2,3].map(i => (
+              <div key={i} style={{ height: '120px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', animation: 'pulse 1.5s infinite', animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </div>
+          <div style={{ height: '250px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', animation: 'pulse 1.5s infinite' }} />
+        </main>
+      </div>
     </div>
   );
 
@@ -939,6 +953,74 @@ function Dashboard() {
           )}
 
           {/* ── SUPPORT WIDGET IS NOW FLOATING, NOT A TAB ── */}
+
+          {activeTab === 'withdraw' && (
+            <div className="tab-content">
+              <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif' }}>Withdraw Funds</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>Fast and secure withdrawals to your crypto wallet.</p>
+              
+              <div style={{ background: 'rgba(0,230,118,0.05)', border: '1px solid rgba(0,230,118,0.2)', padding: '16px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '4px' }}>Available for Withdrawal</p>
+                  <p style={{ color: '#00e676', fontSize: '1.5rem', fontWeight: '800', fontFamily: 'monospace' }}>${dashboardData.user?.balance?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '0.00'}</p>
+                </div>
+                {dashboardData.user?.balance < 50 && (
+                  <div style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '8px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600' }}>
+                    Min. withdrawal is $50
+                  </div>
+                )}
+              </div>
+
+              <div style={{ maxWidth: '480px' }}>
+                <form onSubmit={handleWithdraw}>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Amount to Withdraw (USD)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0 16px', transition: 'border-color 0.2s' }}>
+                      <span style={{ color: '#00e676', fontWeight: '700', marginRight: '8px' }}>$</span>
+                      <input 
+                        type="number" 
+                        min="50"
+                        max={dashboardData.user?.balance || 0}
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        required
+                        placeholder="Min $50"
+                        style={{ width: '100%', padding: '16px 0', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '1rem' }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Withdrawal Method</label>
+                    <select 
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
+                      <option value="usdt">USDT (TRC20)</option>
+                      <option value="btc">Bitcoin (BEP20)</option>
+                      <option value="eth">Ethereum (BEP20)</option>
+                    </select>
+                  </div>
+                  
+                  <div style={{ marginBottom: '28px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Destination Wallet Address</label>
+                    <input 
+                      type="text" 
+                      value={txId}
+                      onChange={(e) => setTxId(e.target.value)}
+                      required
+                      placeholder={`Enter your ${paymentMethod.toUpperCase()} address`}
+                      style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '0.9rem' }}
+                    />
+                  </div>
+                  
+                  <button type="submit" style={{ width: '100%', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', fontWeight: '700', padding: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '1rem', fontFamily: 'Outfit, sans-serif', boxShadow: '0 4px 15px rgba(239,68,68,0.2)', transition: 'all 0.2s' }} disabled={!dashboardData.user || dashboardData.user.balance < 50}>
+                    Request Withdrawal
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
 
           {/* ── KYC TAB ── */}
           {activeTab === 'kyc' && (() => {
