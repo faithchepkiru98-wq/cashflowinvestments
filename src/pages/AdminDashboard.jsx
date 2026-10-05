@@ -620,8 +620,9 @@ function AdminDashboard() {
                             <div style={{ background: msg.isAdmin ? 'rgba(0,176,255,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${msg.isAdmin ? 'rgba(0,176,255,0.2)' : 'rgba(255,255,255,0.1)'}`, padding: '12px 16px', borderRadius: msg.isAdmin ? '16px 16px 4px 16px' : '16px 16px 16px 4px', fontSize: '0.95rem', color: 'white' }}>
                               {msg.text}
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px', textAlign: msg.isAdmin ? 'right' : 'left' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px', textAlign: msg.isAdmin ? 'right' : 'left', display: 'flex', alignItems: 'center', justifyContent: msg.isAdmin ? 'flex-end' : 'flex-start', gap: '4px' }}>
                               {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {msg.isAdmin && <span style={{ color: '#00b0ff', fontSize: '0.75rem', letterSpacing: '-2px' }}>✓✓</span>}
                             </div>
                           </div>
                         ))}

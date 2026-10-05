@@ -20,9 +20,37 @@ function formatTimeLeft(endsAt) {
   const h  = Math.floor(ms / 3600000);
   const m  = Math.floor((ms % 3600000) / 60000);
   const s  = Math.floor((ms % 60000) / 1000);
-  if (h > 0) return `${h}h ${m}m left`;
-  if (m > 0) return `${m}m ${s}s left`;
-  return `${s}s left`;
+  const hStr = h > 0 ? `${String(h).padStart(2,'0')}:` : '';
+  return `${hStr}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} left`;
+}
+
+// ── Animated Number Stat Card ───────────────────────────────────────────────────
+function AnimatedStatCard({ label, value, prefix = '$', color = '#00e676', bg, border }) {
+  const [display, setDisplay] = useState(0);
+  const prevRef = useRef(0);
+  useEffect(() => {
+    const target = Number(value) || 0;
+    const start  = prevRef.current;
+    prevRef.current = target;
+    if (start === target) return;
+    const duration = 800;
+    const startTime = performance.now();
+    const step = (now) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setDisplay(start + (target - start) * ease);
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [value]);
+  return (
+    <div style={{ background: bg, padding: '20px', borderRadius: '16px', border }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>{label}</p>
+      <h3 style={{ fontSize: '2rem', color, fontFamily: 'Outfit, sans-serif', fontWeight: '800', margin: 0 }}>
+        {prefix}{display.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      </h3>
+    </div>
+  );
 }
 
 // ── Live Balance Ticker (Overview) ───────────────────────────────────────────
@@ -247,11 +275,13 @@ function Dashboard() {
     if (res.ok) {
       const msgs = await res.json();
       setChatMessages(prev => {
-        // Count new admin messages as unread when chat is closed
         if (!isChatOpen) {
           const prevAdminCount = prev.filter(m => m.isAdmin).length;
           const newAdminCount = msgs.filter(m => m.isAdmin).length;
-          if (newAdminCount > prevAdminCount) setUnreadCount(c => c + (newAdminCount - prevAdminCount));
+          if (newAdminCount > prevAdminCount) {
+            setUnreadCount(c => c + (newAdminCount - prevAdminCount));
+            playNotifSound();
+          }
         }
         return msgs;
       });
@@ -295,10 +325,24 @@ function Dashboard() {
       setChatMessages(prev => [...prev, newMsg]);
       if (!directMessage) setChatInput('');
       setHasSentMessage(true);
-      // Simulate typing indicator for 2.5s after user sends
+      // Typing indicator for 2.5s
       setShowTyping(true);
       setTimeout(() => setShowTyping(false), 2500);
     }
+  };
+
+  // Play a soft notification ping using Web Audio API
+  const playNotifSound = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } catch {}
   };
 
   const markNotifsRead = async () => {
@@ -563,9 +607,11 @@ function Dashboard() {
 
         {/* Main Content Area */}
         <main style={{ flex: 1, minWidth: '300px', background: 'rgba(24,24,27,0.6)', backdropFilter: 'blur(16px)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-          
+          <style>{`@keyframes tabFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .tab-content { animation: tabFadeIn 0.25s ease forwards; }`}</style>
+
+
           {activeTab === 'overview' && (
-            <div>
+            <div className="tab-content">
               <h2 style={{ marginBottom: '20px', fontSize: '1.8rem' }}>Account Overview</h2>
 
               {/* Broadcast Banners */}
@@ -584,19 +630,25 @@ function Dashboard() {
                 </div>
               ))}
 
-              {/* Stat Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
                 <div style={{ background: 'rgba(0,230,118,0.04)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,230,118,0.12)' }}>
                   <LiveBalance baseBalance={dashboardData.user?.balance} investments={dashboardData.investments || []} />
                 </div>
-                <div style={{ background: 'rgba(0,176,255,0.04)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,176,255,0.12)' }}>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Active Investments</p>
-                  <h3 style={{ fontSize: '2rem', color: '#00b0ff', fontFamily: 'Outfit, sans-serif', fontWeight: '800' }}>{dashboardData.investments?.filter(i => i.status === 'active').length || 0}</h3>
-                </div>
-                <div style={{ background: 'rgba(16,185,129,0.04)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(16,185,129,0.12)' }}>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '10px' }}>Total Profit</p>
-                  <h3 style={{ fontSize: '2rem', color: '#10b981', fontFamily: 'Outfit, sans-serif', fontWeight: '800' }}>${dashboardData.user?.profit?.toLocaleString() || '0.00'}</h3>
-                </div>
+                <AnimatedStatCard
+                  label="Active Investments"
+                  value={dashboardData.investments?.filter(i => i.status === 'active').length || 0}
+                  prefix=""
+                  color="#00b0ff"
+                  bg="rgba(0,176,255,0.04)"
+                  border="1px solid rgba(0,176,255,0.12)"
+                />
+                <AnimatedStatCard
+                  label="Total Profit"
+                  value={dashboardData.user?.profit || 0}
+                  color="#10b981"
+                  bg="rgba(16,185,129,0.04)"
+                  border="1px solid rgba(16,185,129,0.12)"
+                />
               </div>
 
               {/* Portfolio Chart */}
@@ -827,7 +879,7 @@ function Dashboard() {
           )}
 
           {activeTab === 'investments' && (
-            <div>
+            <div className="tab-content">
               <h2 style={{ marginBottom: '8px', fontSize: '1.8rem' }}>My Investments</h2>
               <p style={{ color: 'var(--text-secondary)', marginBottom: '25px', fontSize: '0.9rem' }}>Live gains update in real-time based on your package rate.</p>
               {dashboardData.investments?.length > 0 ? (
