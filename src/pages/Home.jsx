@@ -1029,7 +1029,7 @@ function Home() {
           </div>
           <div className="footer-col">
             <h4>Contact Us</h4>
-            <p>Email: support@Cashflowvest.co.ke</p>
+            <p>Email: support@Cashflowvest.space</p>
             <p>Location: New York, USA</p>
           </div>
         </div>
