@@ -171,6 +171,7 @@ function Dashboard() {
   const [kycSubmitting, setKycSubmitting] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const chatEndRef = useRef(null);
 
   const addToast = (message, type = 'success') => {
@@ -243,18 +244,18 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    if (activeTab === 'support') {
+    if (isChatOpen) {
       fetchChatMessages();
       const interval = setInterval(fetchChatMessages, 5000); // simple polling
       return () => clearInterval(interval);
     }
-  }, [activeTab]);
+  }, [isChatOpen]);
 
   useEffect(() => {
-    if (activeTab === 'support' && chatEndRef.current) {
+    if (isChatOpen && chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatMessages, activeTab]);
+  }, [chatMessages, isChatOpen]);
 
   const sendChatMessage = async (e) => {
     e.preventDefault();
@@ -496,7 +497,6 @@ function Dashboard() {
             { key: 'transactions', label: 'Transactions',   icon: List,                color: '#818cf8' },
             { key: 'withdraw',     label: 'Withdraw Funds', icon: ArrowDownCircle,     color: '#ef4444' },
             { key: 'referrals',    label: 'My Referrals',   icon: Users,               color: '#a78bfa' },
-            { key: 'support',      label: 'Support Chat',   icon: MessageCircle,       color: '#f472b6' },
             { key: 'settings',     label: 'Settings',       icon: Settings,            color: '#94a3b8' },
           ].map(({ key, label, icon: Icon, color }) => (
             <button
@@ -870,39 +870,7 @@ function Dashboard() {
             </div>
           )}
 
-          {/* ── SUPPORT TAB ── */}
-          {activeTab === 'support' && (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '600px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-              <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)' }}>
-                <h2 style={{ margin: 0, fontSize: '1.4rem', fontFamily: 'Outfit, sans-serif' }}>Support Chat</h2>
-                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>We typically reply within a few hours.</p>
-              </div>
-              <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {chatMessages.length === 0 ? (
-                  <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    <MessageCircle size={40} style={{ opacity: 0.2, marginBottom: '10px' }} />
-                    <p>No messages yet. Send a message to start a conversation.</p>
-                  </div>
-                ) : (
-                  chatMessages.map(msg => (
-                    <div key={msg._id} style={{ alignSelf: msg.isAdmin ? 'flex-start' : 'flex-end', maxWidth: '80%' }}>
-                      <div style={{ background: msg.isAdmin ? 'rgba(0,176,255,0.1)' : 'rgba(0,230,118,0.1)', border: `1px solid ${msg.isAdmin ? 'rgba(0,176,255,0.2)' : 'rgba(0,230,118,0.2)'}`, color: 'white', padding: '12px 16px', borderRadius: msg.isAdmin ? '16px 16px 16px 4px' : '16px 16px 4px 16px', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                        {msg.text}
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px', textAlign: msg.isAdmin ? 'left' : 'right' }}>
-                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                  ))
-                )}
-                <div ref={chatEndRef} />
-              </div>
-              <form onSubmit={sendChatMessage} style={{ padding: '15px 20px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.02)' }}>
-                <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="Type your message..." style={{ flex: 1, background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '12px 16px', color: 'white', outline: 'none' }} />
-                <button type="submit" disabled={!chatInput.trim()} style={{ background: '#f472b6', color: '#18181b', border: 'none', padding: '0 20px', borderRadius: '12px', fontWeight: 'bold', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', opacity: chatInput.trim() ? 1 : 0.5 }}>Send</button>
-              </form>
-            </div>
-          )}
+          {/* ── SUPPORT WIDGET IS NOW FLOATING, NOT A TAB ── */}
 
           {/* ── REFERRALS TAB ── */}
           {activeTab === 'referrals' && (
@@ -1079,6 +1047,93 @@ function Dashboard() {
           </div>
         </div>
       )}
+      {/* ── FLOATING SUPPORT WIDGET ── */}
+      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+        
+        {/* Chat Window */}
+        {isChatOpen && (
+          <div style={{ 
+            width: '350px', height: '500px', background: 'white', borderRadius: '16px', overflow: 'hidden', 
+            boxShadow: '0 10px 40px rgba(0,0,0,0.2)', marginBottom: '15px', display: 'flex', flexDirection: 'column',
+            animation: 'slideIn 0.3s ease', border: '1px solid #e5e7eb'
+          }}>
+            {/* Header (Tawk.to Style) */}
+            <div style={{ background: '#00b16a', color: 'white', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span onClick={() => setIsChatOpen(false)} style={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold' }}>{'<'}</span>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontFamily: 'Arial, sans-serif' }}>Customer Support</h3>
+              </div>
+              <X size={20} style={{ cursor: 'pointer' }} onClick={() => setIsChatOpen(false)} />
+            </div>
+
+            {/* Messages Area */}
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#f9fafb', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {chatMessages.length === 0 ? (
+                <div style={{ margin: 'auto', textAlign: 'center', color: '#9ca3af' }}>
+                  <MessageCircle size={40} style={{ opacity: 0.3, marginBottom: '10px' }} />
+                  <p style={{ margin: 0, fontSize: '0.9rem' }}>Send us a message and we'll reply shortly.</p>
+                </div>
+              ) : (
+                chatMessages.map(msg => (
+                  <div key={msg._id} style={{ alignSelf: msg.isAdmin ? 'flex-start' : 'flex-end', maxWidth: '85%' }}>
+                    <div style={{ 
+                      background: msg.isAdmin ? '#e5e7eb' : '#00b16a', 
+                      color: msg.isAdmin ? '#1f2937' : 'white', 
+                      padding: '10px 14px', 
+                      borderRadius: msg.isAdmin ? '14px 14px 14px 4px' : '14px 14px 4px 14px', 
+                      fontSize: '0.9rem', lineHeight: '1.4' 
+                    }}>
+                      {msg.text}
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: '#9ca3af', marginTop: '4px', textAlign: msg.isAdmin ? 'left' : 'right' }}>
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div style={{ background: 'white', borderTop: '1px solid #e5e7eb', padding: '12px' }}>
+              <form onSubmit={sendChatMessage} style={{ display: 'flex', gap: '8px' }}>
+                <input 
+                  type="text" 
+                  value={chatInput} 
+                  onChange={e => setChatInput(e.target.value)} 
+                  placeholder="Type here and press enter.." 
+                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '0.9rem', padding: '8px', color: '#374151', background: 'transparent' }} 
+                />
+                <button type="submit" disabled={!chatInput.trim()} style={{ background: 'transparent', border: 'none', color: '#00b16a', cursor: chatInput.trim() ? 'pointer' : 'default', fontWeight: 'bold' }}>
+                  <TrendingUp size={20} style={{ transform: 'rotate(45deg)', opacity: chatInput.trim() ? 1 : 0.5 }} />
+                </button>
+              </form>
+            </div>
+            
+            {/* Branding Footer */}
+            <div style={{ textAlign: 'center', padding: '6px', background: '#f3f4f6', fontSize: '0.7rem', color: '#9ca3af', borderTop: '1px solid #e5e7eb' }}>
+              ⚡ Powered by Cashflowvest
+            </div>
+          </div>
+        )}
+
+        {/* Floating Toggle Button */}
+        {!isChatOpen && (
+          <button 
+            onClick={() => setIsChatOpen(true)}
+            style={{ 
+              width: '60px', height: '60px', borderRadius: '50%', background: '#00b16a', color: 'white',
+              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 15px rgba(0, 177, 106, 0.4)', transition: 'transform 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <MessageCircle size={30} />
+          </button>
+        )}
+      </div>
+
     </div>
   );
 }
