@@ -24,6 +24,71 @@ function Toast({ toasts, removeToast }) {
 }
 
 // ── Stat Card ───────────────────────────────────────────────────────────────
+function AnimatedStatCard({ label, value, prefix = '', color = '#00e676', bg, border, icon }) {
+  const [display, setDisplay] = React.useState(0);
+  const prevRef = React.useRef(0);
+  React.useEffect(() => {
+    const numericStr = String(value).replace(/[^0-9.]/g, '');
+    const target = Number(numericStr) || 0;
+    const start  = prevRef.current;
+    prevRef.current = target;
+    if (start === target) return;
+    const duration = 800;
+    const startTime = performance.now();
+    const step = (now) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setDisplay(start + (target - start) * ease);
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [value]);
+
+  const displayVal = Number.isInteger(Number(String(value).replace(/[^0-9.]/g, ''))) 
+    ? Math.round(display).toLocaleString() 
+    : display.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+  return (
+    <div style={{ 
+      background: 'rgba(255, 255, 255, 0.02)', 
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      padding: '24px', 
+      borderRadius: '16px', 
+      border: '1px solid rgba(255, 255, 255, 0.05)', 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '20px',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      cursor: 'default'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-2px)';
+      e.currentTarget.style.boxShadow = `0 8px 24px ${color ? color.replace(')', ', 0.15)').replace('rgb', 'rgba') : 'rgba(255,255,255,0.05)'}`;
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+    >
+      <div style={{ 
+        fontSize: '1.8rem', 
+        width: '60px', 
+        height: '60px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: color ? `${color}15` : 'rgba(255,255,255,0.05)',
+        borderRadius: '16px'
+      }}>{icon}</div>
+      <div>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: '700' }}>{label}</p>
+        <h3 style={{ fontSize: '1.6rem', color: 'white', margin: 0, fontFamily: 'Outfit, sans-serif', fontWeight: '500' }}>{prefix}{displayVal}</h3>
+      </div>
+    </div>
+  );
+}
+
 function StatCard({ label, value, color, icon }) {
   return (
     <div style={{ 
@@ -89,7 +154,7 @@ function Badge({ status }) {
 // ── Main Component ──────────────────────────────────────────────────────────
 function AdminDashboard() {
   const [user, setUser]           = useState(null);
-  const [activeTab, setActiveTab] = useState('deposits');
+  const [activeTab, setActiveTab] = useState('overview');
   const [adminData, setAdminData] = useState({ users: [], investments: [], transactions: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts]       = useState([]);
@@ -305,6 +370,7 @@ function AdminDashboard() {
   const pendingWithd = withdrawals.filter(tx => tx.status === 'pending').length;
 
   const navItems = [
+    { key: 'overview',    label: '📊 Overview' },
     { key: 'deposits',    label: '💰 Deposits',    badge: pendingDeps },
     { key: 'withdrawals', label: '📤 Withdrawals', badge: pendingWithd },
     { key: 'investments', label: '📈 Investments' },
@@ -376,10 +442,10 @@ function AdminDashboard() {
         <main style={{ flex: 1, minWidth: '300px' }}>
           {/* Stats Row */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '25px' }}>
-            <div style={{flex: '1 1 200px'}}><StatCard label="Total Users"        value={adminData.users.length}                        color="white"    icon="👥" /></div>
-            <div style={{flex: '1 1 200px'}}><StatCard label="Total Invested"     value={`$${deposits.filter(d=>d.status==='completed').reduce((s,d)=>s+d.amount,0).toLocaleString()}`} color="#00e676" icon="💰" /></div>
-            <div style={{flex: '1 1 200px'}}><StatCard label="Pending Deposits"   value={pendingDeps}                                   color="#f59e0b"  icon="⏳" /></div>
-            <div style={{flex: '1 1 200px'}}><StatCard label="Pending Withdrawals" value={pendingWithd}                                 color="#ef4444"  icon="📤" /></div>
+            <div style={{flex: '1 1 200px'}}><AnimatedStatCard label="Total Users"        value={adminData.users.length}                        color="white"    icon="👥" /></div>
+            <div style={{flex: '1 1 200px'}}><AnimatedStatCard label="Total Invested"     value={deposits.filter(d=>d.status==='completed').reduce((s,d)=>s+d.amount,0)} prefix="$" color="#00e676" icon="💰" /></div>
+            <div style={{flex: '1 1 200px'}}><AnimatedStatCard label="Pending Deposits"   value={pendingDeps}                                   color="#f59e0b"  icon="⏳" /></div>
+            <div style={{flex: '1 1 200px'}}><AnimatedStatCard label="Pending Withdrawals" value={pendingWithd}                                 color="#ef4444"  icon="📤" /></div>
           </div>
 
           {/* Content Card */}
