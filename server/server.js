@@ -167,6 +167,68 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// ─── EMAIL TEST ROUTE ─────────────────────────────────────────────────────────
+app.get('/api/test-email', async (req, res) => {
+    const to = req.query.to;
+    if (!to) {
+        return res.status(400).json({ error: 'Please provide an email query param, e.g. /api/test-email?to=your_email@gmail.com' });
+    }
+
+    if (!process.env.RESEND_API_KEY && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
+        return res.status(500).json({ 
+            error: 'No email configuration found in Render environment variables. Please add RESEND_API_KEY.',
+            envCheck: {
+                hasResendKey: !!process.env.RESEND_API_KEY,
+                hasEmailUser: !!process.env.EMAIL_USER,
+                hasEmailPass: !!process.env.EMAIL_PASS
+            }
+        });
+    }
+
+    if (process.env.RESEND_API_KEY) {
+        const fromAddress = process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Cashflowvest <onboarding@resend.dev>';
+        try {
+            const apiRes = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    from: fromAddress,
+                    to: [to],
+                    subject: 'Test Email from Cashflowvest',
+                    html: '<h2>Hello!</h2><p>This is a test email confirming that Resend email delivery is working successfully.</p>'
+                })
+            });
+
+            const data = await apiRes.json();
+            return res.status(apiRes.ok ? 200 : 400).json({
+                status: apiRes.ok ? 'success' : 'failed',
+                statusCode: apiRes.status,
+                from: fromAddress,
+                to,
+                resendResponse: data
+            });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
+
+    // Gmail fallback test
+    try {
+        await transporter.sendMail({
+            from: `"Cashflowvest" <${process.env.EMAIL_USER}>`,
+            to,
+            subject: 'Test Email from Cashflowvest',
+            html: '<p>Test email via Gmail SMTP.</p>'
+        });
+        return res.json({ status: 'success', method: 'gmail', to });
+    } catch (err) {
+        return res.status(500).json({ error: err.message, method: 'gmail' });
+    }
+});
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
