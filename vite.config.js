@@ -8,6 +8,12 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      // ── SPA fallback: service worker serves index.html for all nav requests ──
+      workbox: {
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],   // don't intercept API calls
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}']
+      },
       manifest: {
         name: 'Cashflowvest',
         short_name: 'Cashflowvest',
