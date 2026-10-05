@@ -176,13 +176,42 @@ const notify = async (userId, message, type = 'info') => {
 
 const sendEmail = async (to, subject, html) => {
     try {
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.warn('⚠️ sendEmail skipped: EMAIL_USER or EMAIL_PASS environment variables are not set in Render Dashboard!');
-            return false;
+        // ── 1. Resend API (Preferred) ──────────────────────────────────────
+        if (process.env.RESEND_API_KEY) {
+            const fromAddress = process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Cashflowvest <onboarding@resend.dev>';
+            const res = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    from: fromAddress,
+                    to: [to],
+                    subject,
+                    html
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                console.error('❌ Resend API error:', data.message || data);
+                return false;
+            }
+
+            console.log(`✅ Email sent via Resend successfully to ${to} (ID: ${data.id})`);
+            return true;
         }
-        await transporter.sendMail({ from: `"Cashflowvest" <${process.env.EMAIL_USER}>`, to, subject, html });
-        console.log(`✅ Email sent successfully to ${to}`);
-        return true;
+
+        // ── 2. Gmail / Nodemailer Fallback ─────────────────────────────────
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            await transporter.sendMail({ from: `"Cashflowvest" <${process.env.EMAIL_USER}>`, to, subject, html });
+            console.log(`✅ Email sent via Gmail SMTP successfully to ${to}`);
+            return true;
+        }
+
+        console.warn('⚠️ sendEmail skipped: Neither RESEND_API_KEY nor EMAIL_USER/EMAIL_PASS are set in Render environment!');
+        return false;
     } catch (err) {
         console.error('❌ Email error:', err.message);
         return false;
