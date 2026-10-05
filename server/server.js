@@ -128,14 +128,14 @@ const messageSchema = new mongoose.Schema({
 const Message = mongoose.model('Message', messageSchema);
 
 
-// Investment packages durations (in hours)
+// Investment packages durations (in hours) — all packages: 5 days
 const PACKAGE_DURATIONS = {
-    'Starter':  6,
-    'Basic':    9,
-    'Bronze':   12,
-    'Silver':   15,
-    'Gold':     24,
-    'Diamond':  48
+    'Starter':  120,
+    'Basic':    120,
+    'Bronze':   120,
+    'Silver':   120,
+    'Gold':     120,
+    'Diamond':  120
 };
 
 const investmentSchema = new mongoose.Schema({
