@@ -187,6 +187,8 @@ function Home() {
   const [referredByCode] = useState(() => new URLSearchParams(window.location.search).get('ref') || '');
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationEmail, setVerificationEmail] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [messageType, setMessageType] = useState('error'); // 'error' | 'success' | 'info'
   
   const navigate = useNavigate();
 
@@ -204,6 +206,13 @@ function Home() {
   };
 
   const strength = getPasswordStrength(password);
+
+  // Resend cooldown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -310,6 +319,7 @@ function Home() {
         if (data.requiresVerification) {
           setVerificationEmail(data.email || email);
           setVerificationCode('');
+          setMessageType('info');
           setMessage(data.message || 'Check your email for a 6-digit verification code.');
           setAuthModal({ ...authModal, type: 'verify_code' });
           return;
@@ -324,9 +334,11 @@ function Home() {
         // Unverified user trying to log in
         setVerificationEmail(data.email || email);
         setVerificationCode('');
+        setMessageType('info');
         setMessage(data.message);
         setAuthModal({ ...authModal, type: 'verify_code' });
       } else {
+        setMessageType('error');
         setMessage(data.message || 'An error occurred');
       }
     } catch (error) {
@@ -336,8 +348,9 @@ function Home() {
     }
   };
 
-  const handleVerifyCode = async (e) => {
-    e.preventDefault();
+  const handleVerifyCode = async (code) => {
+    const codeToSend = code || verificationCode;
+    if (codeToSend.length < 6) return;
     setIsLoading(true);
     setMessage('');
     try {
@@ -345,7 +358,7 @@ function Home() {
       const response = await fetch(`${API_URL}/api/auth/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: verificationEmail, code: verificationCode })
+        body: JSON.stringify({ email: verificationEmail, code: codeToSend })
       });
       const data = await response.json();
       if (response.ok) {
@@ -355,9 +368,11 @@ function Home() {
         setAuthModal({ isOpen: false, type: 'login' });
         navigate('/dashboard');
       } else {
+        setMessageType('error');
         setMessage(data.message || 'Invalid code. Please try again.');
       }
     } catch (error) {
+      setMessageType('error');
       setMessage('Network error. Please try again.');
     } finally {
       setIsLoading(false);
@@ -365,6 +380,7 @@ function Home() {
   };
 
   const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
     setIsLoading(true);
     setMessage('');
     try {
@@ -375,8 +391,11 @@ function Home() {
         body: JSON.stringify({ email: verificationEmail })
       });
       const data = await response.json();
-      setMessage(data.message || 'Code resent!');
-    } catch { setMessage('Failed to resend. Please try again.'); }
+      setMessageType('success');
+      setMessage(data.message || 'A new code has been sent!');
+      setVerificationCode('');
+      setResendCooldown(30);
+    } catch { setMessageType('error'); setMessage('Failed to resend. Please try again.'); }
     finally { setIsLoading(false); }
   };
 
@@ -492,8 +511,9 @@ function Home() {
                 padding: '10px', 
                 marginBottom: '20px', 
                 borderRadius: '8px', 
-                background: message.includes('successful') ? 'rgba(16, 185, 129, 0.1)' : 'var(--warning-bg)',
-                color: message.includes('successful') ? '#10b981' : 'var(--warning-border)',
+                background: messageType === 'success' ? 'rgba(16,185,129,0.1)' : messageType === 'info' ? 'rgba(59,130,246,0.1)' : 'rgba(239,68,68,0.1)',
+                color: messageType === 'success' ? '#10b981' : messageType === 'info' ? '#60a5fa' : '#f87171',
+                border: `1px solid ${messageType === 'success' ? 'rgba(16,185,129,0.25)' : messageType === 'info' ? 'rgba(59,130,246,0.25)' : 'rgba(239,68,68,0.25)'}`,
                 textAlign: 'center',
                 fontSize: '0.875rem'
               }}>
@@ -503,42 +523,94 @@ function Home() {
 
             {authModal.type === 'verify_code' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(0,230,118,0.06)', borderRadius: '10px', border: '1px solid rgba(0,230,118,0.15)' }}>
+                <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(0,230,118,0.05)', borderRadius: '10px', border: '1px solid rgba(0,230,118,0.15)' }}>
                   <div style={{ fontSize: '2rem', marginBottom: '6px' }}>📧</div>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.6' }}>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.6', margin: 0 }}>
                     A 6-digit code was sent to<br />
                     <strong style={{ color: 'white' }}>{verificationEmail}</strong>
                   </p>
                 </div>
-                <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Verification Code</label>
-                    <input
-                      type="text"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="Enter 6-digit code"
-                      maxLength={6}
-                      required
-                      autoFocus
-                      style={{
-                        width: '100%', padding: '14px', borderRadius: '8px',
-                        background: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                        color: 'white', outline: 'none', fontSize: '1.4rem',
-                        textAlign: 'center', letterSpacing: '10px', fontFamily: 'monospace'
-                      }}
-                    />
+
+                {/* 6 individual digit boxes */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.875rem', color: 'var(--text-secondary)', textAlign: 'center' }}>Enter your verification code</label>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <input
+                        key={i}
+                        id={`otp-${i}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={verificationCode[i] || ''}
+                        autoFocus={i === 0}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          const next = verificationCode.split('');
+                          next[i] = val.slice(-1);
+                          const newCode = next.join('').slice(0, 6);
+                          setVerificationCode(newCode);
+                          if (val && i < 5) {
+                            document.getElementById(`otp-${i + 1}`)?.focus();
+                          }
+                          if (newCode.length === 6) handleVerifyCode(newCode);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Backspace' && !verificationCode[i] && i > 0) {
+                            document.getElementById(`otp-${i - 1}`)?.focus();
+                          }
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                          setVerificationCode(pasted);
+                          const nextIdx = Math.min(pasted.length, 5);
+                          document.getElementById(`otp-${nextIdx}`)?.focus();
+                          if (pasted.length === 6) handleVerifyCode(pasted);
+                        }}
+                        style={{
+                          width: '44px', height: '52px',
+                          borderRadius: '10px',
+                          background: verificationCode[i] ? 'rgba(0,230,118,0.08)' : 'var(--bg-main)',
+                          border: verificationCode[i] ? '1.5px solid #00e676' : '1.5px solid var(--border-color)',
+                          color: 'white', outline: 'none',
+                          fontSize: '1.4rem', textAlign: 'center',
+                          fontFamily: 'monospace', fontWeight: 'bold',
+                          transition: 'border-color 0.2s, background 0.2s',
+                          cursor: 'text'
+                        }}
+                      />
+                    ))}
                   </div>
-                  <button type="submit" disabled={isLoading || verificationCode.length < 6} className="btn btn-primary btn-block">
-                    {isLoading ? 'Verifying...' : 'Verify & Continue'}
-                  </button>
-                </form>
+                </div>
+
+                <button
+                  onClick={() => handleVerifyCode()}
+                  disabled={isLoading || verificationCode.length < 6}
+                  className="btn btn-primary btn-block"
+                  style={{ opacity: verificationCode.length < 6 ? 0.5 : 1, transition: 'opacity 0.2s' }}
+                >
+                  {isLoading ? (
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+                      Verifying...
+                    </span>
+                  ) : 'Verify & Continue'}
+                </button>
+
                 <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   Didn't receive the code?{' '}
-                  <a href="#" onClick={(e) => { e.preventDefault(); handleResendCode(); }}
-                    style={{ color: 'var(--accent-blue)', cursor: 'pointer' }}>
-                    {isLoading ? 'Sending...' : 'Resend Code'}
-                  </a>
+                  {resendCooldown > 0 ? (
+                    <span style={{ color: 'var(--text-secondary)' }}>Resend in {resendCooldown}s</span>
+                  ) : (
+                    <a
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); handleResendCode(); }}
+                      style={{ color: 'var(--accent-blue)', cursor: 'pointer' }}
+                    >
+                      {isLoading ? 'Sending...' : 'Resend Code'}
+                    </a>
+                  )}
                 </div>
               </div>
             ) : authModal.type === 'crypto_deposit' ? (
