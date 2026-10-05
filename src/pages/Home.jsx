@@ -1037,7 +1037,7 @@ function Home() {
           </div>
           <div className="footer-col">
             <h4>Contact Us</h4>
-            <p>Email: {publicSettings?.supportEmail || 'support@Cashflowvest.space'}</p>
+            <p>Email: <a href={`mailto:${publicSettings?.supportEmail || 'support@Cashflowvest.space'}`} style={{ color: '#00e676', textDecoration: 'none' }}>{publicSettings?.supportEmail || 'support@Cashflowvest.space'}</a></p>
             {publicSettings?.whatsapp && (
               <p>WhatsApp: <a href={publicSettings.whatsapp} target="_blank" rel="noopener noreferrer" style={{ color: '#00e676', textDecoration: 'none' }}>Message Us</a></p>
             )}

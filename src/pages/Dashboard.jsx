@@ -172,7 +172,11 @@ function Dashboard() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [hasSentMessage, setHasSentMessage] = useState(false);
+  const [showTyping, setShowTyping] = useState(false);
   const chatEndRef = useRef(null);
+  const chatInputRef = useRef(null);
 
   const addToast = (message, type = 'success') => {
     const id = Date.now();
@@ -240,14 +244,33 @@ function Dashboard() {
   const fetchChatMessages = async () => {
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_URL}/api/chat`, { headers: { 'Authorization': `Bearer ${token}` } });
-    if (res.ok) setChatMessages(await res.json());
+    if (res.ok) {
+      const msgs = await res.json();
+      setChatMessages(prev => {
+        // Count new admin messages as unread when chat is closed
+        if (!isChatOpen) {
+          const prevAdminCount = prev.filter(m => m.isAdmin).length;
+          const newAdminCount = msgs.filter(m => m.isAdmin).length;
+          if (newAdminCount > prevAdminCount) setUnreadCount(c => c + (newAdminCount - prevAdminCount));
+        }
+        return msgs;
+      });
+    }
   };
 
   useEffect(() => {
     if (isChatOpen) {
+      setUnreadCount(0);
       fetchChatMessages();
-      const interval = setInterval(fetchChatMessages, 5000); // simple polling
+      const interval = setInterval(fetchChatMessages, 5000);
       return () => clearInterval(interval);
+    }
+  }, [isChatOpen]);
+
+  // Auto-focus input when chat opens
+  useEffect(() => {
+    if (isChatOpen && chatInputRef.current) {
+      setTimeout(() => chatInputRef.current?.focus(), 350);
     }
   }, [isChatOpen]);
 
@@ -271,6 +294,10 @@ function Dashboard() {
       const newMsg = await res.json();
       setChatMessages(prev => [...prev, newMsg]);
       if (!directMessage) setChatInput('');
+      setHasSentMessage(true);
+      // Simulate typing indicator for 2.5s after user sends
+      setShowTyping(true);
+      setTimeout(() => setShowTyping(false), 2500);
     }
   };
 
@@ -1058,11 +1085,13 @@ function Dashboard() {
             boxShadow: '0 10px 40px rgba(0,0,0,0.2)', marginBottom: '15px', display: 'flex', flexDirection: 'column',
             animation: 'slideIn 0.3s ease', border: '1px solid #e5e7eb'
           }}>
-            {/* Header (Tawk.to Style) */}
-            <div style={{ background: '#00b16a', color: 'white', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: '#00b16a', color: 'white', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span onClick={() => setIsChatOpen(false)} style={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold' }}>{'<'}</span>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontFamily: 'Arial, sans-serif' }}>Customer Support</h3>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontFamily: 'Arial, sans-serif' }}>Customer Support</h3>
+                  <p style={{ margin: 0, fontSize: '0.72rem', opacity: 0.85 }}>We typically reply within a few hours</p>
+                </div>
               </div>
               <X size={20} style={{ cursor: 'pointer' }} onClick={() => setIsChatOpen(false)} />
             </div>
@@ -1087,36 +1116,49 @@ function Dashboard() {
                       {msg.text}
                     </div>
                     <div style={{ fontSize: '0.65rem', color: '#9ca3af', marginTop: '4px', textAlign: msg.isAdmin ? 'left' : 'right' }}>
-                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {msg.isAdmin ? 'Support · ' : ''}{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 ))
               )}
+              {/* Typing indicator */}
+              {showTyping && (
+                <div style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+                  <div style={{ background: '#e5e7eb', padding: '10px 16px', borderRadius: '14px 14px 14px 4px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <style>{`@keyframes typingDot { 0%,80%,100%{transform:scale(0);opacity:0.4} 40%{transform:scale(1);opacity:1} } .td{width:7px;height:7px;background:#9ca3af;border-radius:50%;animation:typingDot 1.2s infinite ease-in-out;} .td:nth-child(2){animation-delay:.15s} .td:nth-child(3){animation-delay:.3s}`}</style>
+                    <div className="td"/><div className="td"/><div className="td"/>
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: '#9ca3af', marginTop: '4px' }}>Support is typing...</div>
+                </div>
+              )}
               <div ref={chatEndRef} />
             </div>
 
-            {/* Quick Replies */}
-            <div style={{ padding: '10px 12px', background: 'white', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <style>{`.quick-reply-scroll::-webkit-scrollbar { display: none; }`}</style>
-              <div className="quick-reply-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
-                {["How do I deposit?", "What are the investment plans?", "My withdrawal is pending"].map((msg, i) => (
-                  <button 
-                    key={i} 
-                    onClick={() => sendChatMessage(null, msg)}
-                    style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#374151', padding: '6px 12px', borderRadius: '16px', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; e.currentTarget.style.borderColor = '#d1d5db'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
-                  >
-                    {msg}
-                  </button>
-                ))}
+            {/* Quick Replies - hide after first message sent */}
+            {!hasSentMessage && (
+              <div style={{ padding: '10px 12px', background: 'white', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <style>{`.quick-reply-scroll::-webkit-scrollbar { display: none; }`}</style>
+                <div className="quick-reply-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+                  {["How do I deposit?", "What are the investment plans?", "My withdrawal is pending"].map((msg, i) => (
+                    <button 
+                      key={i} 
+                      onClick={() => sendChatMessage(null, msg)}
+                      style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#374151', padding: '6px 12px', borderRadius: '16px', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+                    >
+                      {msg}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Input Area */}
             <div style={{ background: 'white', borderTop: '1px solid #e5e7eb', padding: '12px' }}>
               <form onSubmit={sendChatMessage} style={{ display: 'flex', gap: '8px' }}>
                 <input 
+                  ref={chatInputRef}
                   type="text" 
                   value={chatInput} 
                   onChange={e => setChatInput(e.target.value)} 
@@ -1139,16 +1181,21 @@ function Dashboard() {
         {/* Floating Toggle Button */}
         {!isChatOpen && (
           <button 
-            onClick={() => setIsChatOpen(true)}
+            onClick={() => { setIsChatOpen(true); setUnreadCount(0); }}
             style={{ 
               width: '60px', height: '60px', borderRadius: '50%', background: '#00b16a', color: 'white',
               border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 15px rgba(0, 177, 106, 0.4)', transition: 'transform 0.2s'
+              boxShadow: '0 4px 15px rgba(0, 177, 106, 0.4)', transition: 'transform 0.2s', position: 'relative'
             }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           >
             <MessageCircle size={30} />
+            {unreadCount > 0 && (
+              <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', borderRadius: '50%', fontSize: '0.7rem', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', boxShadow: '0 2px 6px rgba(239,68,68,0.5)', animation: 'pulse 1.5s infinite' }}>
+                {unreadCount}
+              </span>
+            )}
           </button>
         )}
       </div>

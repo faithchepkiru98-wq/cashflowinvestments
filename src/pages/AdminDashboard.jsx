@@ -605,8 +605,14 @@ function AdminDashboard() {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   {activeChatUserId ? (
                     <>
-                      <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)' }}>
-                        <h2 style={{ margin: 0, fontSize: '1.2rem', fontFamily: 'Outfit, sans-serif' }}>Chat with User</h2>
+                      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(245,166,35,0.15)', border: '1px solid rgba(245,166,35,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                          {(chatUsers.find(u => u._id === activeChatUserId)?.name || '?')[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: '1rem', fontFamily: 'Outfit, sans-serif' }}>{chatUsers.find(u => u._id === activeChatUserId)?.name || chatUsers.find(u => u._id === activeChatUserId)?.email?.split('@')[0]}</h2>
+                          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{chatUsers.find(u => u._id === activeChatUserId)?.email}</p>
+                        </div>
                       </div>
                       <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         {chatMessages.map(msg => (
