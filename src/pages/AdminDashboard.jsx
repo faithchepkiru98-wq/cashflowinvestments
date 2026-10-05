@@ -346,7 +346,7 @@ function AdminDashboard() {
         </div>
       </header>
 
-      <div className="container" style={{ display: 'flex', flex: 1, padding: '100px 20px 40px', gap: '25px', flexWrap: 'wrap' }}>
+      <div className="container" style={{ display: 'flex', flex: 1, marginTop: '80px', paddingBottom: '40px', gap: '25px', flexWrap: 'wrap' }}>
 
         {/* Sidebar */}
         <aside style={{ width: '100%', maxWidth: '220px', flexShrink: 0, position: 'sticky', top: '100px', alignSelf: 'flex-start' }}>

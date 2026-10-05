@@ -485,7 +485,7 @@ function Dashboard() {
           <div style={{ width: '140px', height: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite' }} />
         </div>
       </header>
-      <div className="container" style={{ display: 'flex', flex: 1, padding: '100px 20px 40px', gap: '30px' }}>
+      <div className="container" style={{ display: 'flex', flex: 1, marginTop: '80px', paddingBottom: '40px', gap: '30px' }}>
         <aside style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {[1,2,3,4,5,6,7].map(i => (
             <div key={i} style={{ height: '48px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', animation: 'pulse 1.5s infinite', animationDelay: `${i * 0.1}s` }} />
@@ -572,7 +572,7 @@ function Dashboard() {
       </header>
 
       {/* Dashboard Content */}
-      <div className="container" style={{ display: 'flex', flex: 1, padding: '100px 20px 40px', gap: '30px', flexWrap: 'wrap' }}>
+      <div className="container" style={{ display: 'flex', flex: 1, marginTop: '80px', paddingBottom: '40px', gap: '30px', flexWrap: 'wrap' }}>
         
         {/* Sidebar */}
         <aside style={{ width: '100%', maxWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0, position: 'sticky', top: '100px', alignSelf: 'flex-start', overflowY: 'auto', maxHeight: 'calc(100vh - 120px)', paddingRight: '4px' }}>
