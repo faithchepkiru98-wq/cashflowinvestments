@@ -273,19 +273,20 @@ function AdminDashboard() {
     }
   }, [chatMessages, activeTab]);
 
-  const sendAdminMessage = async (e) => {
-    e.preventDefault();
-    if (!chatInput.trim() || !activeChatUserId) return;
+  const sendAdminMessage = async (e, directMessage = null) => {
+    if (e) e.preventDefault();
+    const textToSend = directMessage || chatInput;
+    if (!textToSend.trim() || !activeChatUserId) return;
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_URL}/api/admin/chat/${activeChatUserId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ text: chatInput })
+      body: JSON.stringify({ text: textToSend })
     });
     if (res.ok) {
       const newMsg = await res.json();
       setChatMessages(prev => [...prev, newMsg]);
-      setChatInput('');
+      if (!directMessage) setChatInput('');
     }
   };
 
@@ -620,6 +621,25 @@ function AdminDashboard() {
                         ))}
                         <div ref={chatEndRef} />
                       </div>
+                      
+                      {/* Admin Quick Replies */}
+                      <div style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        <style>{`.quick-reply-scroll::-webkit-scrollbar { display: none; }`}</style>
+                        <div className="quick-reply-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+                          {["Hello! How can I help you?", "Your withdrawal is being processed.", "Please complete your KYC verification.", "Thank you for your patience."].map((msg, i) => (
+                            <button 
+                              key={i} 
+                              onClick={() => sendAdminMessage(null, msg)}
+                              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', padding: '6px 12px', borderRadius: '16px', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                            >
+                              {msg}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <form onSubmit={sendAdminMessage} style={{ padding: '15px 20px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '10px' }}>
                         <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="Type a reply..." style={{ flex: 1, background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '12px 16px', color: 'white', outline: 'none' }} />
                         <button type="submit" disabled={!chatInput.trim()} style={{ background: '#f5a623', color: '#09090b', border: 'none', padding: '0 20px', borderRadius: '12px', fontWeight: 'bold', cursor: chatInput.trim() ? 'pointer' : 'not-allowed' }}>Reply</button>
