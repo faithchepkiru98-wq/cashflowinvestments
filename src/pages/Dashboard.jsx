@@ -189,6 +189,10 @@ function Dashboard() {
   const [walletAddresses, setWalletAddresses] = useState(null);
   const [txId, setTxId] = useState('');
   const [contactInfo, setContactInfo] = useState('');
+  // Dedicated withdraw form state (isolated from invest modal state)
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawMethod, setWithdrawMethod] = useState('usdt');
+  const [withdrawWallet, setWithdrawWallet] = useState('');
   const [copied, setCopied] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -457,20 +461,21 @@ function Dashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          amount: amount,
-          method: paymentMethod,
-          walletAddress: txId // Reusing txId state for walletAddress to save state vars
+          amount: withdrawAmount,
+          method: withdrawMethod,
+          walletAddress: withdrawWallet
         })
       });
       const data = await response.json();
       if (response.ok) {
         addToast(data.message, 'success');
-        setAmount('');
-        setTxId('');
+        setWithdrawAmount('');
+        setWithdrawWallet('');
+        setWithdrawMethod('usdt');
         fetchDashboardData(token);
         setActiveTab('transactions');
       } else {
-        addToast(data.message, 'error');
+        addToast(data.message || 'Withdrawal failed', 'error');
       }
     } catch {
       addToast('Network error', 'error');
@@ -766,61 +771,65 @@ function Dashboard() {
           )}
 
           {activeTab === 'withdraw' && (
-            <div>
+            <div className="tab-content">
               <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif' }}>Withdraw Funds</h2>
               <p style={{ color: 'var(--text-secondary)', marginBottom: '28px', fontSize: '0.9rem' }}>Funds are processed within 24–48 hours.</p>
               <div style={{ background: 'rgba(0,0,0,0.2)', padding: '28px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', maxWidth: '520px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,230,118,0.06)', border: '1px solid rgba(0,230,118,0.15)', borderRadius: '12px', padding: '16px 20px', marginBottom: '28px' }}>
                   <div>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Available Balance</p>
-                    <p style={{ color: '#00e676', fontSize: '1.6rem', fontWeight: '800', fontFamily: 'Outfit, sans-serif', margin: 0 }}>${dashboardData.user?.balance?.toLocaleString() || '0.00'}</p>
+                    <p style={{ color: '#00e676', fontSize: '1.6rem', fontWeight: '800', fontFamily: 'Outfit, sans-serif', margin: 0 }}>${(dashboardData.user?.balance || 0).toLocaleString()}</p>
                   </div>
                   <span style={{ fontSize: '2rem' }}>💰</span>
                 </div>
-                
+
                 <form onSubmit={handleWithdrawalSubmit}>
                   <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Amount (USD)</label>
-                    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0 16px', transition: 'border-color 0.2s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0 16px' }}>
                       <span style={{ color: '#00e676', fontWeight: '700', marginRight: '8px' }}>$</span>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         min="50"
                         max={dashboardData.user?.balance || 0}
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={withdrawAmount}
+                        onChange={(e) => setWithdrawAmount(e.target.value)}
                         required
                         placeholder="Min $50"
                         style={{ width: '100%', padding: '16px 0', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '1rem' }}
                       />
                     </div>
                   </div>
-                  
+
                   <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Withdrawal Method</label>
-                    <select 
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
+                    <select
+                      value={withdrawMethod}
+                      onChange={(e) => setWithdrawMethod(e.target.value)}
                       style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
                       <option value="usdt">USDT (TRC20)</option>
                       <option value="btc">Bitcoin (BEP20)</option>
                       <option value="eth">Ethereum (BEP20)</option>
                     </select>
                   </div>
-                  
+
                   <div style={{ marginBottom: '28px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px' }}>Destination Wallet Address</label>
-                    <input 
-                      type="text" 
-                      value={txId}
-                      onChange={(e) => setTxId(e.target.value)}
+                    <input
+                      type="text"
+                      value={withdrawWallet}
+                      onChange={(e) => setWithdrawWallet(e.target.value)}
                       required
-                      placeholder={`Enter your ${(paymentMethod || 'usdt').toUpperCase()} address`}
+                      placeholder={`Enter your ${withdrawMethod.toUpperCase()} address`}
                       style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '0.9rem' }}
                     />
                   </div>
-                  
-                  <button type="submit" style={{ width: '100%', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', fontWeight: '700', padding: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '1rem', fontFamily: 'Outfit, sans-serif', boxShadow: '0 4px 15px rgba(239,68,68,0.2)', transition: 'all 0.2s' }} disabled={!dashboardData.user || (dashboardData.user.balance || 0) < 50}>
+
+                  <button
+                    type="submit"
+                    disabled={!dashboardData.user || (dashboardData.user.balance || 0) < 50}
+                    style={{ width: '100%', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', fontWeight: '700', padding: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '1rem', fontFamily: 'Outfit, sans-serif', boxShadow: '0 4px 15px rgba(239,68,68,0.2)', transition: 'all 0.2s' }}
+                  >
                     Request Withdrawal
                   </button>
                 </form>
