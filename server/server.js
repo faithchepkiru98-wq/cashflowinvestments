@@ -521,20 +521,57 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ─── ADMIN CREATOR ROUTE (SECURED) ───────────────────────────────────────────
+// ─── ADMIN CREATOR ROUTE ──────────────────────────────────────────────────────
+// First-time: works with no secret if zero admins exist (bootstrap mode)
+// After first admin exists: requires ADMIN_SECRET_KEY query param for security
 app.get('/api/auth/make-me-admin/:email', async (req, res) => {
     try {
-        // Prevent unauthorized users from becoming admin
-        if (!process.env.ADMIN_SECRET_KEY || req.query.secret !== process.env.ADMIN_SECRET_KEY) {
-            return res.status(403).send('<h1>Forbidden: Invalid or missing secret key.</h1>');
+        const adminCount = await User.countDocuments({ role: 'admin' });
+
+        // If admins already exist, require secret key
+        if (adminCount > 0) {
+            if (!process.env.ADMIN_SECRET_KEY || req.query.secret !== process.env.ADMIN_SECRET_KEY) {
+                return res.status(403).send(`
+                    <h1>🔒 Forbidden</h1>
+                    <p>An admin already exists. Provide the correct <code>?secret=YOUR_KEY</code> to promote another admin.</p>
+                    <p>Find your ADMIN_SECRET_KEY in the Render Dashboard → Environment Variables.</p>
+                `);
+            }
         }
 
-        const user = await User.findOneAndUpdate({ email: req.params.email }, { role: 'admin' });
-        if (!user) return res.send('<h1>User not found! Check your email spelling.</h1>');
-        res.send('<h1>Success! You are now an Admin! 👑</h1><h2>Go back to the website, LOGOUT, and LOG BACK IN.</h2>');
-    } catch {
-        res.send('<h1>Error making admin.</h1>');
+        const user = await User.findOneAndUpdate(
+            { email: req.params.email },
+            { role: 'admin' },
+            { new: true }
+        );
+        if (!user) return res.send(`
+            <h1>❌ User Not Found</h1>
+            <p>No account found with email: <strong>${req.params.email}</strong></p>
+            <p>Make sure you have registered and verified your email first.</p>
+        `);
+
+        console.log(`[Admin Bootstrap] ${user.email} promoted to admin (first admin: ${adminCount === 0})`);
+        res.send(`
+            <div style="font-family:sans-serif;max-width:500px;margin:80px auto;padding:40px;background:#0a0c10;color:#f3f4f6;border-radius:16px;border:1px solid #00e676;text-align:center;">
+                <div style="font-size:3rem;">👑</div>
+                <h1 style="color:#00e676;margin:16px 0 8px;">You are now an Admin!</h1>
+                <p style="color:#9ca3af;">Account: <strong style="color:white;">${user.email}</strong></p>
+                <p style="color:#9ca3af;margin-top:20px;">Go back to the website, <strong style="color:white;">log out</strong>, then <strong style="color:white;">log back in</strong> to access the Admin Panel.</p>
+                <a href="https://cashflowvest.space" style="display:inline-block;margin-top:24px;background:#00e676;color:#000;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Go to Website →</a>
+            </div>
+        `);
+    } catch (err) {
+        console.error('Make-admin error:', err);
+        res.status(500).send('<h1>Error making admin. Check server logs.</h1>');
     }
+});
+
+// Check if any admin exists (useful for debugging)
+app.get('/api/auth/admin-status', async (req, res) => {
+    try {
+        const count = await User.countDocuments({ role: 'admin' });
+        res.json({ adminExists: count > 0, adminCount: count });
+    } catch { res.status(500).json({ message: 'Server error' }); }
 });
 
 // ─── FEATURE 2: Password Reset ──────────────────────────────────────────────
