@@ -59,7 +59,7 @@ const WALLET_ADDRESSES = platformSettings;
 const userSchema = new mongoose.Schema({
     name:                { type: String },
     phone:               { type: String },
-    email:               { type: String, required: true, unique: true },
+    email:               { type: String, required: true, unique: true, lowercase: true, trim: true },
     password:            { type: String, required: true },
     balance:             { type: Number, default: 0 },
     profit:              { type: Number, default: 0 },
@@ -135,9 +135,37 @@ const Transaction = mongoose.model('Transaction', transactionSchema);
 
 // ─── DB CONNECTION ────────────────────────────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cashflowvest';
-mongoose.connect(MONGODB_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
+
+mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000,
+})
+    .then(() => console.log('Connected to MongoDB successfully'))
+    .catch(err => {
+        console.error('MongoDB connection error:', err.message);
+        console.error('Make sure MONGODB_URI is properly set and your IP is whitelisted (0.0.0.0/0 on MongoDB Atlas).');
+    });
+
+mongoose.connection.on('disconnected', () => {
+    console.warn('MongoDB disconnected.');
+});
+
+// ─── HEALTH CHECK ROUTE ───────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+    const state = mongoose.connection.readyState;
+    const stateMap = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+    const isConnected = state === 1;
+
+    res.status(isConnected ? 200 : 503).json({
+        status: isConnected ? 'ok' : 'degraded',
+        database: {
+            status: stateMap[state] || 'unknown',
+            connected: isConnected,
+            host: mongoose.connection.host || 'none'
+        },
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -159,14 +187,27 @@ const sendEmail = async (to, subject, html) => {
 // ─── FEATURE 1: Email Verification ──────────────────────────────────────────
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password, phone, referredByCode } = req.body;
+        if (mongoose.connection.readyState !== 1) {
+            console.error('Registration rejected: Database not connected (readyState:', mongoose.connection.readyState, ')');
+            return res.status(503).json({ 
+                message: 'Database connection unavailable. Please verify MONGODB_URI in your Render Dashboard / environment.' 
+            });
+        }
+
+        let { name, email, password, phone, referredByCode } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        email = email.toString().trim().toLowerCase();
 
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
         let referredById = null;
         if (referredByCode) {
-            const referrer = await User.findOne({ referralCode: referredByCode });
+            const referrer = await User.findOne({ referralCode: referredByCode.toString().trim().toUpperCase() });
             if (referrer) referredById = referrer._id;
         }
 
@@ -214,7 +255,11 @@ app.post('/api/auth/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ message: 'Server error' });
+        const isDbError = error.name === 'MongooseError' || error.name === 'MongoServerSelectionError' || error.name === 'MongoNetworkError';
+        const msg = isDbError 
+            ? 'Database error: unable to reach the database. Please verify MONGODB_URI.' 
+            : (process.env.NODE_ENV !== 'production' ? (error.message || 'Server error') : 'Server error');
+        res.status(500).json({ message: msg });
     }
 });
 
@@ -237,10 +282,28 @@ app.get('/api/auth/verify', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        // Fast-fail if DB is not connected
+        if (mongoose.connection.readyState !== 1) {
+            console.error('Login attempt rejected: Database not connected (readyState:', mongoose.connection.readyState, ')');
+            return res.status(503).json({ 
+                message: 'Database connection unavailable. Please verify MONGODB_URI in your Render Dashboard / environment.' 
+            });
+        }
+
+        let { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        email = email.toString().trim().toLowerCase();
 
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+
+        if (!user.password) {
+            return res.status(400).json({ message: 'Invalid account credentials. Please reset your password.' });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
@@ -262,7 +325,11 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ message: 'Server error' });
+        const isDbError = error.name === 'MongooseError' || error.name === 'MongoServerSelectionError' || error.name === 'MongoNetworkError';
+        const msg = isDbError 
+            ? 'Database error: unable to reach the database. Please verify MONGODB_URI.' 
+            : (process.env.NODE_ENV !== 'production' ? (error.message || 'Server error') : 'Server error');
+        res.status(500).json({ message: msg });
     }
 });
 
