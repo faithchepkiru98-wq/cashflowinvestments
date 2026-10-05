@@ -100,6 +100,11 @@ function AdminDashboard() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [broadcasts, setBroadcasts] = useState([]);
   const [newBroadcast, setNewBroadcast] = useState({ title: '', message: '', type: 'info' });
+  const [chatUsers, setChatUsers] = useState([]);
+  const [activeChatUserId, setActiveChatUserId] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = React.useRef(null);
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -238,6 +243,52 @@ function AdminDashboard() {
     finally { setIsSavingSettings(false); }
   };
 
+  const fetchChatUsers = async () => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/api/admin/chat/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) setChatUsers(await res.json());
+  };
+
+  const fetchChatMessages = async (userId) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/api/admin/chat/${userId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) setChatMessages(await res.json());
+  };
+
+  useEffect(() => {
+    if (activeTab === 'support') {
+      fetchChatUsers();
+      if (activeChatUserId) fetchChatMessages(activeChatUserId);
+      const interval = setInterval(() => {
+        fetchChatUsers();
+        if (activeChatUserId) fetchChatMessages(activeChatUserId);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, activeChatUserId]);
+
+  useEffect(() => {
+    if (activeTab === 'support' && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, activeTab]);
+
+  const sendAdminMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !activeChatUserId) return;
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/api/admin/chat/${activeChatUserId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ text: chatInput })
+    });
+    if (res.ok) {
+      const newMsg = await res.json();
+      setChatMessages(prev => [...prev, newMsg]);
+      setChatInput('');
+    }
+  };
+
   const handleLogout = () => { localStorage.clear(); navigate('/'); };
 
   if (isLoading) return (
@@ -256,6 +307,7 @@ function AdminDashboard() {
     { key: 'withdrawals', label: '📤 Withdrawals', badge: pendingWithd },
     { key: 'investments', label: '📈 Investments' },
     { key: 'users',       label: '👥 Users' },
+    { key: 'support',     label: '💬 Support Chat' },
     { key: 'broadcasts',  label: '📢 Broadcasts' },
     { key: 'settings',    label: '⚙️ Settings' },
   ];
@@ -530,6 +582,54 @@ function AdminDashboard() {
                 </>)}
               </table>
             </div>
+            )}
+
+            {/* ── SUPPORT TAB ── */}
+            {activeTab === 'support' && (
+              <div style={{ display: 'flex', height: '600px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                <div style={{ width: '30%', borderRight: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.2rem', fontFamily: 'Outfit, sans-serif' }}>Conversations</h2>
+                  </div>
+                  <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {chatUsers.map(u => (
+                      <div key={u._id} onClick={() => setActiveChatUserId(u._id)} style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', background: activeChatUserId === u._id ? 'rgba(245,166,35,0.1)' : 'transparent', borderLeft: activeChatUserId === u._id ? '3px solid #f5a623' : '3px solid transparent' }}>
+                        <div style={{ fontWeight: '600' }}>{u.name || u.email.split('@')[0]}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{u.email}</div>
+                      </div>
+                    ))}
+                    {chatUsers.length === 0 && <div style={{ padding: '20px', color: 'var(--text-secondary)', textAlign: 'center' }}>No active chats</div>}
+                  </div>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  {activeChatUserId ? (
+                    <>
+                      <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)' }}>
+                        <h2 style={{ margin: 0, fontSize: '1.2rem', fontFamily: 'Outfit, sans-serif' }}>Chat with User</h2>
+                      </div>
+                      <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        {chatMessages.map(msg => (
+                          <div key={msg._id} style={{ alignSelf: msg.isAdmin ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                            <div style={{ background: msg.isAdmin ? 'rgba(0,176,255,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${msg.isAdmin ? 'rgba(0,176,255,0.2)' : 'rgba(255,255,255,0.1)'}`, padding: '12px 16px', borderRadius: msg.isAdmin ? '16px 16px 4px 16px' : '16px 16px 16px 4px', fontSize: '0.95rem', color: 'white' }}>
+                              {msg.text}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px', textAlign: msg.isAdmin ? 'right' : 'left' }}>
+                              {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={chatEndRef} />
+                      </div>
+                      <form onSubmit={sendAdminMessage} style={{ padding: '15px 20px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '10px' }}>
+                        <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="Type a reply..." style={{ flex: 1, background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '12px 16px', color: 'white', outline: 'none' }} />
+                        <button type="submit" disabled={!chatInput.trim()} style={{ background: '#f5a623', color: '#09090b', border: 'none', padding: '0 20px', borderRadius: '12px', fontWeight: 'bold', cursor: chatInput.trim() ? 'pointer' : 'not-allowed' }}>Reply</button>
+                      </form>
+                    </>
+                  ) : (
+                    <div style={{ margin: 'auto', color: 'var(--text-secondary)' }}>Select a conversation to start chatting</div>
+                  )}
+                </div>
+              </div>
             )}
 
             {/* ── BROADCASTS TAB ── */}

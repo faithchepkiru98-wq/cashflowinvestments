@@ -99,6 +99,18 @@ const broadcastSchema = new mongoose.Schema({
 });
 const Broadcast = mongoose.model('Broadcast', broadcastSchema);
 
+// ─── MESSAGE MODEL (SUPPORT CHAT) ─────────────────────────────────────────────
+const messageSchema = new mongoose.Schema({
+    sender:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // null for general support
+    text:     { type: String, required: true },
+    isAdmin:  { type: Boolean, default: false },
+    isRead:   { type: Boolean, default: false },
+    createdAt:{ type: Date, default: Date.now }
+});
+const Message = mongoose.model('Message', messageSchema);
+
+
 // Investment packages durations (in hours)
 const PACKAGE_DURATIONS = {
     'Starter':  6,
@@ -983,6 +995,57 @@ app.get('/api/user/referrals', verifyToken, async (req, res) => {
         const referrals = await User.find({ referredBy: req.user.id }, 'name email createdAt referralBonusPaid');
         const bonusEarned = referrals.filter(r => r.referralBonusPaid).length * 10;
         res.json({ referrals, bonusEarned });
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+// ─── SUPPORT CHAT ────────────────────────────────────────────────────────────
+app.get('/api/chat', verifyToken, async (req, res) => {
+    try {
+        const messages = await Message.find({
+            $or: [{ sender: req.user.id }, { receiver: req.user.id }]
+        }).sort({ createdAt: 1 });
+        res.json(messages);
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.post('/api/chat', verifyToken, async (req, res) => {
+    try {
+        if (!req.body.text) return res.status(400).json({ message: 'Message text required' });
+        const message = new Message({ sender: req.user.id, text: req.body.text, isAdmin: false });
+        await message.save();
+        res.status(201).json(message);
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.get('/api/admin/chat/users', verifyAdmin, async (req, res) => {
+    try {
+        const userIds = await Message.distinct('sender', { isAdmin: false });
+        const users = await User.find({ _id: { $in: userIds } }, 'name email');
+        res.json(users);
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.get('/api/admin/chat/:userId', verifyAdmin, async (req, res) => {
+    try {
+        const messages = await Message.find({
+            $or: [{ sender: req.params.userId }, { receiver: req.params.userId }]
+        }).sort({ createdAt: 1 });
+        res.json(messages);
+    } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+app.post('/api/admin/chat/:userId', verifyAdmin, async (req, res) => {
+    try {
+        if (!req.body.text) return res.status(400).json({ message: 'Text required' });
+        const message = new Message({
+            sender: req.user.id,
+            receiver: req.params.userId,
+            text: req.body.text,
+            isAdmin: true
+        });
+        await message.save();
+        await notify(req.params.userId, `💬 Support replied: "${req.body.text.substring(0, 40)}..."`, 'info');
+        res.status(201).json(message);
     } catch { res.status(500).json({ message: 'Server error' }); }
 });
 

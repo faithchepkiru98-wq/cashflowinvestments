@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, Wallet, ArrowDownCircle, List, LogOut, Bell, ShieldCheck, X, Settings, Users } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Wallet, ArrowDownCircle, List, LogOut, Bell, ShieldCheck, X, Settings, Users, MessageCircle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -169,6 +169,9 @@ function Dashboard() {
   const [kycFile, setKycFile] = useState(null);
   const [kycAddressFile, setKycAddressFile] = useState(null);
   const [kycSubmitting, setKycSubmitting] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef(null);
 
   const addToast = (message, type = 'success') => {
     const id = Date.now();
@@ -230,6 +233,42 @@ function Dashboard() {
       console.error('Failed to fetch dashboard data', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchChatMessages = async () => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/api/chat`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) setChatMessages(await res.json());
+  };
+
+  useEffect(() => {
+    if (activeTab === 'support') {
+      fetchChatMessages();
+      const interval = setInterval(fetchChatMessages, 5000); // simple polling
+      return () => clearInterval(interval);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'support' && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, activeTab]);
+
+  const sendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ text: chatInput })
+    });
+    if (res.ok) {
+      const newMsg = await res.json();
+      setChatMessages(prev => [...prev, newMsg]);
+      setChatInput('');
     }
   };
 
@@ -457,6 +496,7 @@ function Dashboard() {
             { key: 'transactions', label: 'Transactions',   icon: List,                color: '#818cf8' },
             { key: 'withdraw',     label: 'Withdraw Funds', icon: ArrowDownCircle,     color: '#ef4444' },
             { key: 'referrals',    label: 'My Referrals',   icon: Users,               color: '#a78bfa' },
+            { key: 'support',      label: 'Support Chat',   icon: MessageCircle,       color: '#f472b6' },
             { key: 'settings',     label: 'Settings',       icon: Settings,            color: '#94a3b8' },
           ].map(({ key, label, icon: Icon, color }) => (
             <button
@@ -827,6 +867,40 @@ function Dashboard() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* ── SUPPORT TAB ── */}
+          {activeTab === 'support' && (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '600px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+              <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)' }}>
+                <h2 style={{ margin: 0, fontSize: '1.4rem', fontFamily: 'Outfit, sans-serif' }}>Support Chat</h2>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>We typically reply within a few hours.</p>
+              </div>
+              <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {chatMessages.length === 0 ? (
+                  <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    <MessageCircle size={40} style={{ opacity: 0.2, marginBottom: '10px' }} />
+                    <p>No messages yet. Send a message to start a conversation.</p>
+                  </div>
+                ) : (
+                  chatMessages.map(msg => (
+                    <div key={msg._id} style={{ alignSelf: msg.isAdmin ? 'flex-start' : 'flex-end', maxWidth: '80%' }}>
+                      <div style={{ background: msg.isAdmin ? 'rgba(0,176,255,0.1)' : 'rgba(0,230,118,0.1)', border: `1px solid ${msg.isAdmin ? 'rgba(0,176,255,0.2)' : 'rgba(0,230,118,0.2)'}`, color: 'white', padding: '12px 16px', borderRadius: msg.isAdmin ? '16px 16px 16px 4px' : '16px 16px 4px 16px', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                        {msg.text}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px', textAlign: msg.isAdmin ? 'left' : 'right' }}>
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={chatEndRef} />
+              </div>
+              <form onSubmit={sendChatMessage} style={{ padding: '15px 20px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.02)' }}>
+                <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="Type your message..." style={{ flex: 1, background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '12px 16px', color: 'white', outline: 'none' }} />
+                <button type="submit" disabled={!chatInput.trim()} style={{ background: '#f472b6', color: '#18181b', border: 'none', padding: '0 20px', borderRadius: '12px', fontWeight: 'bold', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', opacity: chatInput.trim() ? 1 : 0.5 }}>Send</button>
+              </form>
             </div>
           )}
 
