@@ -260,8 +260,8 @@ function AdminDashboard() {
     { key: 'settings',    label: '⚙️ Settings' },
   ];
 
-  const thStyle = { padding: '16px 20px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.05)' };
-  const tdStyle = { padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.9rem', verticalAlign: 'middle', background: 'transparent' };
+  const thStyle = { padding: '14px 16px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap' };
+  const tdStyle = { padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.88rem', verticalAlign: 'middle', background: 'transparent', whiteSpace: 'nowrap' };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
@@ -340,9 +340,9 @@ function AdminDashboard() {
             </div>
 
             {/* Table-based tabs: Deposits, Withdrawals, Investments, Users */}
-            {activeTab !== 'settings' && (
-            <div className="table-responsive">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            {activeTab !== 'settings' && activeTab !== 'broadcasts' && (
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '750px', borderCollapse: 'collapse', textAlign: 'left' }}>
                 {/* ── DEPOSITS ── */}
                 {activeTab === 'deposits' && (<>
                   <thead><tr>
