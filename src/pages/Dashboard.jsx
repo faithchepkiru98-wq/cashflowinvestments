@@ -815,12 +815,12 @@ function Dashboard() {
                       value={txId}
                       onChange={(e) => setTxId(e.target.value)}
                       required
-                      placeholder={`Enter your ${paymentMethod.toUpperCase()} address`}
+                      placeholder={`Enter your ${(paymentMethod || 'usdt').toUpperCase()} address`}
                       style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '0.9rem' }}
                     />
                   </div>
                   
-                  <button type="submit" style={{ width: '100%', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', fontWeight: '700', padding: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '1rem', fontFamily: 'Outfit, sans-serif', boxShadow: '0 4px 15px rgba(239,68,68,0.2)', transition: 'all 0.2s' }} disabled={!dashboardData.user || dashboardData.user.balance < 50}>
+                  <button type="submit" style={{ width: '100%', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', fontWeight: '700', padding: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '1rem', fontFamily: 'Outfit, sans-serif', boxShadow: '0 4px 15px rgba(239,68,68,0.2)', transition: 'all 0.2s' }} disabled={!dashboardData.user || (dashboardData.user.balance || 0) < 50}>
                     Request Withdrawal
                   </button>
                 </form>
