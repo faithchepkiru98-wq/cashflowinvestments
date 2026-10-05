@@ -176,10 +176,15 @@ const notify = async (userId, message, type = 'info') => {
 
 const sendEmail = async (to, subject, html) => {
     try {
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            console.warn('⚠️ sendEmail skipped: EMAIL_USER or EMAIL_PASS environment variables are not set in Render Dashboard!');
+            return false;
+        }
         await transporter.sendMail({ from: `"Cashflowvest" <${process.env.EMAIL_USER}>`, to, subject, html });
+        console.log(`✅ Email sent successfully to ${to}`);
         return true;
     } catch (err) {
-        console.error('Email error:', err.message);
+        console.error('❌ Email error:', err.message);
         return false;
     }
 };
@@ -352,9 +357,15 @@ app.get('/api/auth/make-me-admin/:email', async (req, res) => {
 // ─── FEATURE 2: Password Reset ──────────────────────────────────────────────
 app.post('/api/auth/forgot-password', async (req, res) => {
     try {
-        const { email } = req.body;
+        let { email } = req.body;
+        if (!email) return res.status(400).json({ message: 'Email is required' });
+        email = email.toString().trim().toLowerCase();
+
         const user = await User.findOne({ email });
-        if (!user) return res.json({ message: 'If that email exists, a reset link has been sent.' });
+        if (!user) {
+            console.log(`Forgot password requested for non-existing email: ${email}`);
+            return res.json({ message: 'If that email exists, a reset link has been sent.' });
+        }
 
         const resetToken = crypto.randomBytes(32).toString('hex');
         user.resetPasswordToken  = resetToken;
@@ -362,7 +373,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         await user.save();
 
         const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
-        await sendEmail(email, 'Reset Your Cashflowvest Password', `
+        const sent = await sendEmail(email, 'Reset Your Cashflowvest Password', `
             <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#131722;color:#f3f4f6;padding:40px;border-radius:12px;">
               <h1 style="color:#f5a623;">Password Reset Request</h1>
               <p>Click below to reset your password. This link is valid for 1 hour.</p>
@@ -371,8 +382,13 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             </div>
         `);
 
+        if (!sent) {
+            console.warn(`Password reset email could not be delivered to ${email}. Check EMAIL_USER and EMAIL_PASS.`);
+        }
+
         res.json({ message: 'If that email exists, a reset link has been sent.' });
     } catch (error) {
+        console.error('Forgot password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
