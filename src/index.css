@@ -597,6 +597,23 @@ ul {
     to { transform: translateX(0); opacity: 1; } 
 }
 
+@keyframes scrollTicker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.payouts-ticker-track {
+    display: flex;
+    align-items: center;
+    width: max-content;
+    animation: scrollTicker 32s linear infinite;
+    will-change: transform;
+}
+
+.payouts-ticker-track:hover {
+    animation-play-state: paused;
+}
+
 .animate-on-scroll {
   opacity: 0;
   transform: translateY(30px);

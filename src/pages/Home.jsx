@@ -763,16 +763,52 @@ function Home() {
 
       <main>
         {/* Live Payouts Ticker */}
-        <div style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(0,230,118,0.1)', padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', marginTop: '68px' }}>
-          <div style={{ display: 'inline-block', animation: 'scrollTicker 30s linear infinite' }}>
-            {[...Array(2)].map((_, i) => (
-              <span key={i} style={{ display: 'inline-flex', gap: '60px' }}>
-                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ color: '#00e676', fontWeight: '800' }}>✓</span> alex*** withdrew $4,250 · USDT</span>
-                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '800' }}>✓</span> mark_99 withdrew $1,100 · BTC</span>
-                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '800' }}>✓</span> sarah.t withdrew $8,500 · ETH</span>
-                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '800' }}>✓</span> crypto_king withdrew $12,400 · USDT</span>
-                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '800' }}>✓</span> david_w withdrew $2,300 · BTC</span>
-                <span style={{ color: 'rgba(0,230,118,0.5)', marginRight: '60px' }}>|</span>
+        <div style={{ 
+          background: '#0a0a0a', 
+          borderBottom: '1px solid rgba(0,230,118,0.12)', 
+          padding: '10px 0', 
+          overflow: 'hidden', 
+          whiteSpace: 'nowrap', 
+          display: 'flex', 
+          marginTop: '68px',
+          maskImage: 'linear-gradient(90deg, transparent 0%, black 3%, black 97%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 3%, black 97%, transparent 100%)'
+        }}>
+          <style>{`
+            @keyframes scrollTicker {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .payouts-ticker-track {
+              display: flex;
+              align-items: center;
+              width: max-content;
+              animation: scrollTicker 35s linear infinite;
+              will-change: transform;
+            }
+            .payouts-ticker-track:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          <div className="payouts-ticker-track">
+            {[...Array(4)].map((_, i) => (
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '50px', paddingRight: '50px' }}>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: '#00e676', fontWeight: '800' }}>✓</span> alex*** withdrew $4,250 · USDT
+                </span>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: '800' }}>✓</span> mark_99 withdrew $1,100 · BTC
+                </span>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: '800' }}>✓</span> sarah.t withdrew $8,500 · ETH
+                </span>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: '800' }}>✓</span> crypto_king withdrew $12,400 · USDT
+                </span>
+                <span style={{ color: '#00e676', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: '800' }}>✓</span> david_w withdrew $2,300 · BTC
+                </span>
+                <span style={{ color: 'rgba(0,230,118,0.4)', fontSize: '0.85rem' }}>|</span>
               </span>
             ))}
           </div>
